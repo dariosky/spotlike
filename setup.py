@@ -1,7 +1,7 @@
 from distutils.core import setup
 
 setup(
-    name='songlike',
+    name='spotlike',
     version='1.0',
     py_modules=['main'],
     install_require=['click'],
@@ -10,6 +10,6 @@ setup(
     description='A bot to ameliorate your Spotify experience',
     entry_points='''
         [console_scripts]
-        songlike=main:cli
+        spotlike=main:cli
     '''
 )

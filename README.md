@@ -1,4 +1,5 @@
-## Songlike
+![Spotlike](assets/spotlike.svg)
+
 #### a bot to ameliorate your Spotify experience
 
 ----
@@ -11,16 +12,16 @@ Trust me - it's going to be awesome
 
 ----
 
-At the moment this is a CLI interface, it will lunch a bot that does
+At the moment this is a CLI interface, it will launch a bot that does
 magic with your Spotify account.
 
-If you install it via pip - you'll get a `songlike` command.
+If you install it via pip - you'll get a `spotlite` command.
 
 First you'll have to link it to your Spotify account, it should
 be as easy as
 
 ```shell script
-songlike auth
+spotlike auth
 ```
 
 That will open a browser kindly asking to confirm, and you're set.

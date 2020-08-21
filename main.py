@@ -9,7 +9,7 @@ os.environ['SPOTIPY_REDIRECT_URI'] = 'http://localhost:3000'
 
 @click.group()
 def cli():
-    """ Songlike - a bot to ameliorate your Spotify experience """
+    """ Spotlike - a bot to ameliorate your Spotify experience """
     click.echo("Test")
     if False:
         birdy_uri = 'spotify:artist:2WX2uTcsvV5OnS0inACecP'
