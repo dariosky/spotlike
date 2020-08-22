@@ -116,29 +116,18 @@ def sync_merge_fast(likes, playlist_tracks):
     while True:
         # let's add songs until we find something already synced or we find something sinced before the current like
         if liked and in_playlist and (liked['track']['id'] != in_playlist['track']['id']
-                                      and in_playlist['added_at'] <= liked['added_at']
-        ):
+                                      and in_playlist['added_at'] <= liked['added_at']):
             to_add.append(liked['track']['id'])
             liked = next(likes, None)
             continue
-
-        # a condition to exit - is when we find something in_playlist that is older than the current liked song
-        if liked and in_playlist and (in_playlist['added_at'] <= liked['added_at']):
-            break
 
         if liked and (not in_playlist or liked['track']['id'] != in_playlist['track']['id']):
             # if what we have
             logger.info(f"Adding the non-liked {liked['track']['name']}")
             to_add.append(liked['track']['id'])
             liked = next(likes, None)
-        elif liked and in_playlist and in_playlist['track']['id'] not in to_add:
-            # if the song in the PL is newer, we should probably remove it
-            logger.info(f"Removing the non-liked {in_playlist['track']['name']}")
-            to_del.append(in_playlist['track']['id'])
-            in_playlist = next(playlist_tracks, None)
-
-        if not liked and not in_playlist:  # we iterated everything
-            break
+            continue
+        break
 
     return to_add, to_del
 

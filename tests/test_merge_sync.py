@@ -33,7 +33,8 @@ class TestMergeFull:
         ])
         to_add, to_del = sync_merge(likes, current, full=self.full)
         assert to_add == ['b', 'a']
-        assert to_del == ['c']
+        if self.full:  # fast sync doesn't unlike
+            assert to_del == ['c']
 
     def test_normal(self):
         likes = iter([
@@ -54,7 +55,15 @@ class TestMergeFull:
         ])
         to_add, to_del = sync_merge(likes, current, full=self.full)
         assert to_add == []
-        assert to_del == ['a']
+        if self.full:  # fast sync doesn't unlike
+            assert to_del == ['a']
+
+
+class TestMergeFast(TestMergeFull):
+    """ Tests for the fast algorithm - we adopt the tests for the full version
+        but we adapt as deletions can't always work
+    """
+    full = False
 
 
 class TestChunkSplitting:
