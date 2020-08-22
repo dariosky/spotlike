@@ -10,7 +10,7 @@ def cli():
 
 @cli.command()
 @click.option('--name', help="Liked playlist name", default='Liked playlist')
-@click.option('--fast', help="Perform a fast sync", default=False)
+@click.option('--fast', help="Perform a fast sync", default=False, is_flag=True)
 def sync(name, fast):
     """ Syncronize all your liked songs with a playlist - so you can share them with others """
     click.echo(f"Syncing the liked songs with '{name}'")

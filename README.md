@@ -39,3 +39,20 @@ a full but slow sync - or a fast one that just check for recent additions.
 
 That's it - it will show you a few of your songs, but stay tuned:
 the magic still has to come.
+
+### Roadmap
+
+If you find yourself doing repetitive chores in Spotify, or you have an
+idea that will save the humanity tons of hour so we can all move to a beach
+sipping Mojitos, write me [in the suggestion box](mailto://dariosky@gmail.com)!
+
+Here a few things I'll be working on (in this order):
+
+* Automatically like (or add to a playlist) the songs you're listening to the most
+* Multi-user support - ATM it links with a Spotify account, and it will be
+  bonded to it for the rest of it's life
+* Add a web-interface to this bot: you can always run it on your box, but if
+  I host it for you, you don't have to create a SpotifyApp and keep your computer
+  on checking your account to do its magic
+* Warn whenever you like two songs with the same name and duration (to me it happens often
+  I like a song in the original album, and again in a collection)
