@@ -1,6 +1,6 @@
 import click
 
-from spottools import sync_liked_with_playlist
+from spottools import SpotUserActions
 
 
 @click.group()
@@ -10,13 +10,12 @@ def cli():
 
 @cli.command()
 @click.option('--name', help="Liked playlist name", default='Liked playlist')
-def sync(name):
+@click.option('--fast', help="Perform a fast sync", default=False)
+def sync(name, fast):
     """ Syncronize all your liked songs with a playlist - so you can share them with others """
-    click.echo(f"Syncing the liked songs with the '{name}'")
-    sync_liked_with_playlist(name)
-
-    # for liked_song in liked_songs():
-    #     print(liked_song)
+    click.echo(f"Syncing the liked songs with '{name}'")
+    act = SpotUserActions()
+    act.sync_liked_with_playlist(name, full=not fast)
 
 
 if __name__ == '__main__':

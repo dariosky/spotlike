@@ -17,14 +17,23 @@ magic with your Spotify account.
 
 If you install it via pip - you'll get a `spotlite` command.
 
-First you'll have to link it to your Spotify account, it should
-be as easy as
+Let's start with the first feature: creating a playlist with all
+your liked songs (and keep it in sync) so you can share it with others.
 
 ```shell script
-spotlike auth
+spotlike sync
 ```
 
-That will open a browser kindly asking to confirm, and you're set.
+The fist time you'll lunch it it will open a browser kindly asking
+ for permissions to access your Spotify account, and you're set.
+Like for the other commands, you can check the options with 
+
+```shell script
+spotlike sync --help
+```
+
+You can change the playlist with the likes name and choose between
+a full but slow sync - or a fast one that just check for recent additions. 
 
 ...
 
