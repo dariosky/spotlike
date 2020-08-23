@@ -1,3 +1,5 @@
+import logging
+
 import click
 
 from spottools import SpotUserActions
@@ -12,11 +14,22 @@ def cli():
 @click.option('--name', help="Liked playlist name", default='Liked playlist')
 @click.option('--fast', help="Perform a fast sync", default=False, is_flag=True)
 def sync(name, fast):
-    """ Syncronize all your liked songs with a playlist - so you can share them with others """
+    """ Syncronize all your liked songs with a playlist """
     click.echo(f"Syncing the liked songs with '{name}'")
     act = SpotUserActions()
     act.sync_liked_with_playlist(name, full=not fast)
 
 
+@cli.command()
+def remove_duplicates():
+    """ Look for duplicate-likes - keep the oldest """
+    click.echo(f"Looking for duplicates in your liked songs")
+    act = SpotUserActions()
+    act.remove_liked_duplicates()
+
+
 if __name__ == '__main__':
-    sync()
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s: %(message)s')
+    logging.getLogger('spotlike').setLevel(logging.DEBUG)
+    # sync()
+    remove_duplicates()

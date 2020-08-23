@@ -1,5 +1,7 @@
 import logging
+from collections import defaultdict
 from functools import partial
+from typing import Dict
 
 import click
 import spotipy
@@ -7,11 +9,12 @@ import spotipy
 # will get credentials and save them locally
 redirect_uri = 'http://localhost:3000'
 scope = ",".join(
-    ("user-library-read", 'playlist-read-private',
-     "playlist-modify-public", "playlist-modify-private")
+    ('user-library-read', 'user-library-modify',
+     'playlist-read-private',
+     'playlist-modify-public', 'playlist-modify-private')
 )
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('spotlike.spottools')
 
 
 class SpotUserActions:
@@ -80,6 +83,32 @@ class SpotUserActions:
         yield from self.get_spotify_list(
             self.spotify.current_user_saved_tracks()
         )
+
+    def remove_liked_duplicates(self):
+        track_versions: Dict[str:list] = defaultdict(list)  # track key - list of (track_id, date)
+        # we keep the date when a song was liked - so we can show it to the user
+        for liked in self.liked_songs():
+            track_id = liked['track']['id']
+            track_duration = liked['track']['duration_ms']
+            track_name = liked['track']['name']
+
+            key = track_name, track_duration
+            track_versions[key].append((track_id, liked['added_at']))
+
+        to_unlike = set()
+        for key, versions in track_versions.items():
+            if len(versions) > 1:
+                duplicates = versions[:-1]  # all but the last
+                logger.debug(
+                    f"Found a duplicate for {key} - removing {len(duplicates)}"
+                    f" - liked on {[date for dup_id, date in versions]}")
+                to_unlike |= set(dup_id for dup_id, date in duplicates)
+        if to_unlike:
+            logger.info(f"Unlike {len(to_unlike)} songs")
+            for tracks in reverse_block_chunks(list(to_unlike), 100):
+                self.spotify.current_user_saved_tracks_delete(
+                    tracks=tracks,
+                )
 
 
 def reverse_block_chunks(l, size):

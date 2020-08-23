@@ -17,7 +17,8 @@ magic with your Spotify account.
 
 If you install it via pip - you'll get a `spotlite` command.
 
-Let's start with the first feature: creating a playlist with all
+#### Sync your likes to a playlist
+The first feature: creating a playlist with all
 your liked songs (and keep it in sync) so you can share it with others.
 
 ```shell script
@@ -33,12 +34,25 @@ spotlike sync --help
 ```
 
 You can change the playlist with the likes name and choose between
-a full but slow sync - or a fast one that just check for recent additions. 
+a full but slow sync (default) - or a fast one that just check for recent
+additions.
 
-...
+#### Remove duplicates in you likes
 
-That's it - it will show you a few of your songs, but stay tuned:
-the magic still has to come.
+It happend to all of us: you REALLY love that song - so if you see it without the heart,
+you can't resist. In Spotify however the same song in different albums has different ids,
+and so you end up with duplicates your carefully crafted list of likes.
+
+Spotlike is here to help you, it will remove all the duplicate likes
+(it checks for songs with same title and same duration, as the list of artists may differ).
+
+It will keep the latest one of your likes... cause you want to show the world you like it since
+you were young! 
+
+```shell script
+spotlike remove-duplicates
+```
+
 
 ### Roadmap
 
@@ -54,5 +68,5 @@ Here a few things I'll be working on (in this order):
 * Add a web-interface to this bot: you can always run it on your box, but if
   I host it for you, you don't have to create a SpotifyApp and keep your computer
   on checking your account to do its magic
-* Warn whenever you like two songs with the same name and duration (to me it happens often
-  I like a song in the original album, and again in a collection)
+* ~Warn whenever you like two songs with the same name and duration (to me it happens often
+  I like a song in the original album, and again in a collection)~
