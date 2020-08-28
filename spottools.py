@@ -1,3 +1,4 @@
+import datetime
 import logging
 from collections import defaultdict
 from functools import partial
@@ -8,11 +9,12 @@ import spotipy
 
 # will get credentials and save them locally
 redirect_uri = 'http://localhost:3000'
-scope = ",".join(
-    ('user-library-read', 'user-library-modify',
-     'playlist-read-private',
-     'playlist-modify-public', 'playlist-modify-private')
-)
+scope = ",".join((
+    'user-library-read', 'user-library-modify',
+    'playlist-read-private',
+    'playlist-modify-public', 'playlist-modify-private',
+    'user-read-recently-played', 'user-top-read',
+))
 
 logger = logging.getLogger('spotlike.spottools')
 
@@ -81,7 +83,7 @@ class SpotUserActions:
 
     def liked_songs(self):
         yield from self.get_spotify_list(
-            self.spotify.current_user_saved_tracks()
+            self.spotify.current_user_saved_tracks(limit=50)
         )
 
     def remove_liked_duplicates(self):
@@ -109,6 +111,42 @@ class SpotUserActions:
                 self.spotify.current_user_saved_tracks_delete(
                     tracks=tracks,
                 )
+
+    def auto_like_recurrent(self, played_times=5, day_period=30):
+        """ Autolike songs played at least `played_times` times over the `day_period` """
+        check_history_from = datetime.datetime.utcnow() - datetime.timedelta(days=day_period)
+        as_timestamp = int(check_history_from.timestamp() * 1000)  # in ms
+        recently_played: Dict[str, Dict] = {}
+        scanned = 0
+
+        # we collect recent tracks in two ways - via the spotify top list - and via the recently played ones
+        track_collecting_methods = (
+            partial(self.spotify.current_user_top_tracks, time_range='short_term'),
+            partial(self.spotify.current_user_recently_played, after=as_timestamp),
+        )
+
+        to_like = set()
+
+        for track_collecting_method in track_collecting_methods:
+            for played in self.get_spotify_list(track_collecting_method()):
+                scanned += 1
+                if played.get('type') == 'track':  # this is a top-track we just add it
+                    logger.debug(f"Track {played['name']} is a recent top")
+                    to_like.add(played['id'])
+                else:
+                    track_id = played['track']['id']
+                    played_at = played['played_at']
+                    if track_id not in recently_played:
+                        recently_played[track_id] = dict(name=played['track']['name'],
+                                                         play_history=set())
+                    recently_played[track_id]['play_history'].add(played_at)
+
+        for track_id, desc in recently_played.items():
+            if len(desc['play_history']) >= played_times:
+                logger.debug("Recently played several", desc)
+                to_like.add(track_id)
+
+        logger.debug(f"Scanned {scanned} songs - recurrent {len(to_like)}")
 
 
 def reverse_block_chunks(l, size):
@@ -167,3 +205,12 @@ def sync_merge(likes, playlist_tracks, full=True):
         return sync_merge_full(likes, playlist_tracks)
     else:
         return sync_merge_fast(likes, playlist_tracks)
+
+
+if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s: %(message)s')
+    logging.getLogger('spotlike').setLevel(logging.DEBUG)
+
+    act = SpotUserActions()
+    act.auto_like_recurrent()
+    # act.remove_liked_duplicates()

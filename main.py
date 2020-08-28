@@ -28,8 +28,16 @@ def remove_duplicates():
     act.remove_liked_duplicates()
 
 
+@cli.command()
+def auto_like_recurrent():
+    click.echo(f"Looking for recurrent songs to like")
+    act = SpotUserActions()
+    act.auto_like_recurrent()
+
+
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s: %(message)s')
     logging.getLogger('spotlike').setLevel(logging.DEBUG)
     # sync()
-    remove_duplicates()
+    # remove_duplicates()
+    auto_like_recurrent()
