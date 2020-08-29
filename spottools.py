@@ -10,6 +10,7 @@ import spotipy
 # will get credentials and save them locally
 redirect_uri = 'http://localhost:3000'
 scope = ",".join((
+    'user-read-email',
     'user-library-read', 'user-library-modify',
     'playlist-read-private',
     'playlist-modify-public', 'playlist-modify-private',
@@ -112,7 +113,7 @@ class SpotUserActions:
                     tracks=tracks,
                 )
 
-    def auto_like_recurrent(self, played_times=5, day_period=30):
+    def auto_like_recurrent(self, played_times=5, day_period=30, store=True):
         """ Autolike songs played at least `played_times` times over the `day_period` """
         check_history_from = datetime.datetime.utcnow() - datetime.timedelta(days=day_period)
         as_timestamp = int(check_history_from.timestamp() * 1000)  # in ms
