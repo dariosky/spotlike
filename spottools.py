@@ -8,6 +8,8 @@ import click
 import spotipy
 
 # will get credentials and save them locally
+from store import User, initdb
+
 redirect_uri = 'http://localhost:3000'
 scope = ",".join((
     'user-read-email',
@@ -20,11 +22,61 @@ scope = ",".join((
 logger = logging.getLogger('spotlike.spottools')
 
 
+class StoredSpotifyOauth(spotipy.SpotifyOAuth):
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        self.user = user
+        self.token_info = None
+
+    def get_cached_token(self):
+        if not self.user:  # I have no tokens - we'll ask for them
+            return None
+        token_info = self.user.tokens  # get from DB
+        # if scopes don't match, then bail
+        if "scope" not in token_info or not self._is_scope_subset(
+            self.scope, token_info["scope"]
+        ):
+            return None
+
+        if self.is_token_expired(token_info):
+            token_info = self.refresh_access_token(
+                token_info["refresh_token"]
+            )
+        self.token_info = token_info
+        return token_info
+
+    def _save_token_info(self, token_info):
+        self.token_info = token_info
+        if not self.user:
+            return
+        self.user.tokens = token_info
+        self.user.save()
+
+
 class SpotUserActions:
-    def __init__(self):
-        self.spotify = spotipy.Spotify(auth_manager=spotipy.SpotifyOAuth(scope=scope,
-                                                                         cache_path='.tokens',
-                                                                         redirect_uri=redirect_uri))
+    def __init__(self, user=None):
+        initdb()
+        # we use a custom client_credentials_manager that writes in the DB
+        auth_manager = StoredSpotifyOauth(scope=scope,
+                                          user=user,
+                                          redirect_uri=redirect_uri)
+
+        self.spotify = spotipy.Spotify(auth_manager=auth_manager)
+
+        spotify_user = self.spotify.current_user()
+
+        # we are initialized - let's save the user
+        self.user = User(id=spotify_user['id'], name=spotify_user['display_name'],
+                         email=spotify_user['email'],
+                         picture=spotify_user['images'][0]['url'] if spotify_user['images'] else None,
+                         tokens=auth_manager.token_info,
+                         )
+
+        if user is None:
+            # we didn't have the user - so we save the tokens now
+            auth_manager.user = self.user
+        self.user.insert_or_update()
 
     def get_spotify_list(self, results):
         while True:
@@ -65,7 +117,8 @@ class SpotUserActions:
         """
         playlist = self.get_or_create_playlist(name)
         # we have these two iterators
-        playlist_tracks = self.get_spotify_list(self.spotify.playlist_tracks(playlist['id']))
+        playlist_tracks = self.get_spotify_list(self.spotify.playlist_items(playlist['id'],
+                                                                            additional_types=('tracks')), )
         likes = self.liked_songs()
 
         to_add, to_del = sync_merge(likes, playlist_tracks, full=full)
@@ -73,13 +126,13 @@ class SpotUserActions:
         click.echo(f"Adding {len(to_add)} songs / removing {len(to_del)}")
 
         # we add and remove all the needed tracks
-        for all_tracks, method in ((to_add, partial(self.spotify.user_playlist_add_tracks, position=0)),
-                                   (to_del, self.spotify.user_playlist_remove_all_occurrences_of_tracks)):
+        for all_tracks, method in ((to_add, partial(self.spotify.playlist_add_items, position=0)),
+                                   (to_del, self.spotify.playlist_remove_all_occurrences_of_items)):
             # we do our operations in chunks of 100 tracks
             for tracks in reverse_block_chunks(all_tracks, 100):
                 method(
-                    self.spotify.current_user()['id'], playlist['id'],
-                    tracks=tracks,
+                    playlist['id'],
+                    tracks,
                 )
 
     def liked_songs(self):
@@ -212,6 +265,17 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s: %(message)s')
     logging.getLogger('spotlike').setLevel(logging.DEBUG)
 
-    act = SpotUserActions()
-    act.auto_like_recurrent()
-    # act.remove_liked_duplicates()
+
+    def playground():
+        # iterate through all the users and
+        for user in User.select():
+            act = SpotUserActions(user)
+            # act.sync_liked_with_playlist(name='Liked playlist')
+            act.auto_like_recurrent()
+            # act.remove_liked_duplicates()
+
+        # get a local user
+        # act = SpotUserActions()
+
+
+    playground()

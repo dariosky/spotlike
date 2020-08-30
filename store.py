@@ -1,3 +1,4 @@
+import atexit
 import datetime
 
 import peewee
@@ -10,13 +11,19 @@ class BaseModel(peewee.Model):
     class Meta:
         database = db
 
+    def insert_or_update(self):
+        if self.dirty_fields:
+            saved = self.save()
+            if not saved:
+                self.save(force_insert=True)
+
 
 class User(BaseModel):
     id = peewee.CharField(primary_key=True)
     name = peewee.CharField()
-    email = peewee.CharField(unique=True)
+    email = peewee.CharField(unique=True, index=True)
     picture = peewee.CharField()
-    token = JSONField()
+    tokens = JSONField()
     join_date = peewee.DateTimeField(default=datetime.datetime.utcnow)
 
 
@@ -49,12 +56,17 @@ class Liked(BaseModel):
     track = peewee.ForeignKeyField(Track)
 
 
+def closedb():
+    db.close()
+
+
 def initdb():
     db.connect(reuse_if_open=True)
     db.create_tables((User,
                       Artist, Track, TrackArtist,
                       Play
                       ))
+    atexit.register(closedb)
 
 
 if __name__ == '__main__':
