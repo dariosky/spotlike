@@ -49,6 +49,7 @@ class StoredSpotifyOauth(spotipy.SpotifyOAuth):
     def _save_token_info(self, token_info):
         self.token_info = token_info
         if not self.user:
+            # logger.warning("Skipping tokens save - without a user")
             return
         self.user.tokens = token_info
         self.user.save()
@@ -118,7 +119,8 @@ class SpotUserActions:
         playlist = self.get_or_create_playlist(name)
         # we have these two iterators
         playlist_tracks = self.get_spotify_list(self.spotify.playlist_items(playlist['id'],
-                                                                            additional_types=('tracks')), )
+                                                                            additional_types=('track',)
+                                                                            ))
         likes = self.liked_songs()
 
         to_add, to_del = sync_merge(likes, playlist_tracks, full=full)
@@ -276,6 +278,7 @@ if __name__ == '__main__':
 
         # get a local user
         # act = SpotUserActions()
+        # act.sync_liked_with_playlist(name='Liked playlist')
 
 
     playground()
