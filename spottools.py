@@ -55,13 +55,17 @@ class StoredSpotifyOauth(spotipy.SpotifyOAuth):
         self.user.save()
 
 
+def get_auth_manager(user=None):
+    return StoredSpotifyOauth(scope=scope,
+                              user=user,
+                              redirect_uri=redirect_uri)
+
+
 class SpotUserActions:
     def __init__(self, user=None):
         initdb()
         # we use a custom client_credentials_manager that writes in the DB
-        auth_manager = StoredSpotifyOauth(scope=scope,
-                                          user=user,
-                                          redirect_uri=redirect_uri)
+        auth_manager = get_auth_manager(user)
 
         self.spotify = spotipy.Spotify(auth_manager=auth_manager)
 

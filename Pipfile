@@ -11,6 +11,9 @@ spotipy = "*"
 click = "*"
 cachetools = "*"
 peewee = "*"
+flask = "*"
+bjoern = "*"
+flask-cors = "*"
 
 [requires]
 python_version = "3.8"
