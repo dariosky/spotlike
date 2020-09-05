@@ -10,7 +10,6 @@ import spotipy
 # will get credentials and save them locally
 from store import User, initdb
 
-redirect_uri = 'http://localhost:3000'
 scope = ",".join((
     'user-read-email',
     'user-library-read', 'user-library-modify',
@@ -55,33 +54,36 @@ class StoredSpotifyOauth(spotipy.SpotifyOAuth):
         self.user.save()
 
 
-def get_auth_manager(user=None):
+def get_auth_manager(user=None, redirect_uri='http://localhost:3000'):
     return StoredSpotifyOauth(scope=scope,
                               user=user,
-                              redirect_uri=redirect_uri)
+                              redirect_uri=redirect_uri,
+                              # show_dialog=True,
+                              )
 
 
 class SpotUserActions:
-    def __init__(self, user=None):
+    def __init__(self, user=None, connect=True, redirect_uri='http://localhost:3000'):
         initdb()
         # we use a custom client_credentials_manager that writes in the DB
-        auth_manager = get_auth_manager(user)
+        self.auth_manager = auth_manager = get_auth_manager(user, redirect_uri=redirect_uri)
 
         self.spotify = spotipy.Spotify(auth_manager=auth_manager)
 
-        spotify_user = self.spotify.current_user()
+        if connect:
+            spotify_user = self.spotify.current_user()
 
-        # we are initialized - let's save the user
-        self.user = User(id=spotify_user['id'], name=spotify_user['display_name'],
-                         email=spotify_user['email'],
-                         picture=spotify_user['images'][0]['url'] if spotify_user['images'] else None,
-                         tokens=auth_manager.token_info,
-                         )
+            # we are initialized - let's save the user
+            self.user = User(id=spotify_user['id'], name=spotify_user['display_name'],
+                             email=spotify_user['email'],
+                             picture=spotify_user['images'][0]['url'] if spotify_user['images'] else None,
+                             tokens=auth_manager.token_info,
+                             )
 
-        if user is None:
-            # we didn't have the user - so we save the tokens now
-            auth_manager.user = self.user
-        self.user.insert_or_update()
+            if user is None:
+                # we didn't have the user - so we save the tokens now
+                auth_manager.user = self.user
+            self.user.insert_or_update()
 
     def get_spotify_list(self, results):
         while True:

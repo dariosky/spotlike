@@ -3,6 +3,9 @@ import os
 import flask
 from flask_cors import CORS
 
+from spottools import SpotUserActions
+from store import User
+
 try:
     import bjoern
 except ImportError:
@@ -15,6 +18,33 @@ SERVED_EXTENSIONS = {'.jpg', '.ico', '.png', '.map', '.js', '.svg',
 def get_app(production=True):
     app = flask.Flask(__name__)
     CORS(app)
+
+    @app.route('/user')
+    def get_current_user():
+        uid = flask.session.get('uid')
+        if not uid:
+            redirect_uri = flask.url_for('connect', _external=True)
+            act = SpotUserActions(user=None, connect=False,
+                                  redirect_uri=redirect_uri)
+            return dict(  # not a user
+                spotify_connect_url=act.auth_manager.get_authorize_url(),
+            )
+        else:
+            user = User.get_by_id(uid)
+            # act = SpotUserActions(user=user)
+            return dict(
+                id=user.id,
+                name=user.name,
+                email=user.email,
+            )
+
+    @app.route("/connect")
+    def connect():
+        code = flask.request.args.get("code")
+        redirect_uri = flask.url_for('connect', _external=True)
+        act = SpotUserActions(user=None, connect=False, redirect_uri=redirect_uri)
+        act.auth_manager.get_access_token(code)
+        return {"message": "Connected"}
 
     @app.route("/", defaults={"url": ""})
     @app.route('/<path:url>')

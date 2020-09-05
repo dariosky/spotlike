@@ -1,8 +1,8 @@
 <template>
   <v-app>
     <v-main id="app">
-      <v-container fluid>
-        <router-link to="/" class="logobox">
+      <v-container fluid class="logobox">
+        <router-link to="/">
           <img id="logo" alt="Spotlike" src="@/assets/spotlike.svg" />
         </router-link>
         <div id="nav">
@@ -11,6 +11,7 @@
           <!-- <router-link to="/logout">Logout</router-link>-->
         </div>
       </v-container>
+
       <v-container class="view">
         <div class="content">
           <nuxt />
