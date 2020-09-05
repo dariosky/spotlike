@@ -1,26 +1,20 @@
-# Spotlike UI
+# spotlike
 
-The UI of Spolike runs via Vue3 RC.
+## Build Setup
 
-You have to install the node dependencies and it, it will then talk
-with the API server in Flask. 
+```bash
+# install dependencies
+$ yarn install
 
-## Project setup
-```
-yarn install
-```
+# serve with hot reload at localhost:3000
+$ yarn dev
 
-### Compiles and hot-reloads for development
-```
-yarn serve
-```
+# build for production and launch server
+$ yarn build
+$ yarn start
 
-### Compiles and minifies for production
-```
-yarn build
+# generate static project
+$ yarn generate
 ```
 
-### Lints and fixes files
-```
-yarn lint
-```
+For detailed explanation on how things work, check out [Nuxt.js docs](https://nuxtjs.org).
