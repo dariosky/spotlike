@@ -2,8 +2,9 @@ import os
 
 import flask
 from flask_cors import CORS
+from spotipy import SpotifyOauthError
 
-from spottools import SpotUserActions
+from spottools import SpotUserActions, get_auth_manager
 from store import User
 
 try:
@@ -17,6 +18,8 @@ SERVED_EXTENSIONS = {'.jpg', '.ico', '.png', '.map', '.js', '.svg',
 
 def get_app(production=True):
     app = flask.Flask(__name__)
+    app.config.from_pyfile(os.environ.get('SPOTLIKE_SETTINGS',
+                                          '../spotlike.cfg'))
     CORS(app)
 
     @app.route('/user')
@@ -42,9 +45,14 @@ def get_app(production=True):
     def connect():
         code = flask.request.args.get("code")
         redirect_uri = flask.url_for('connect', _external=True)
-        act = SpotUserActions(user=None, connect=False, redirect_uri=redirect_uri)
-        act.auth_manager.get_access_token(code)
-        return {"message": "Connected"}
+        try:
+            auth_manager = get_auth_manager(None, redirect_uri=redirect_uri)
+            auth_manager.get_access_token(code, check_cache=False)
+            act = SpotUserActions(user=None, auth_manager=auth_manager)
+            flask.session['uid'] = act.user.id
+            return act.user.as_json()
+        except SpotifyOauthError as e:
+            return {"message": str(e)}, 400
 
     @app.route("/", defaults={"url": ""})
     @app.route('/<path:url>')

@@ -26,6 +26,13 @@ class User(BaseModel):
     tokens = JSONField()
     join_date = peewee.DateTimeField(default=datetime.datetime.utcnow)
 
+    def as_json(self):
+        return {
+            k: getattr(self, k)
+            for k in ('id', 'name',
+                      'email', 'picture')
+        }
+
 
 class Artist(BaseModel):
     id = peewee.CharField(primary_key=True)

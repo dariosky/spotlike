@@ -30,7 +30,7 @@ class StoredSpotifyOauth(spotipy.SpotifyOAuth):
 
     def get_cached_token(self):
         if not self.user:  # I have no tokens - we'll ask for them
-            return None
+            return self.token_info
         token_info = self.user.tokens  # get from DB
         # if scopes don't match, then bail
         if "scope" not in token_info or not self._is_scope_subset(
@@ -63,12 +63,15 @@ def get_auth_manager(user=None, redirect_uri='http://localhost:3000'):
 
 
 class SpotUserActions:
-    def __init__(self, user=None, connect=True, redirect_uri='http://localhost:3000'):
+    def __init__(self, user=None,
+                 auth_manager = None,
+                 connect=True,
+                 redirect_uri='http://localhost:3000'):
         initdb()
         # we use a custom client_credentials_manager that writes in the DB
-        self.auth_manager = auth_manager = get_auth_manager(user, redirect_uri=redirect_uri)
+        self.auth_manager = auth_manager or get_auth_manager(user, redirect_uri=redirect_uri)
 
-        self.spotify = spotipy.Spotify(auth_manager=auth_manager)
+        self.spotify = spotipy.Spotify(auth_manager=self.auth_manager)
 
         if connect:
             spotify_user = self.spotify.current_user()
@@ -77,12 +80,12 @@ class SpotUserActions:
             self.user = User(id=spotify_user['id'], name=spotify_user['display_name'],
                              email=spotify_user['email'],
                              picture=spotify_user['images'][0]['url'] if spotify_user['images'] else None,
-                             tokens=auth_manager.token_info,
+                             tokens=self.auth_manager.token_info,
                              )
 
             if user is None:
                 # we didn't have the user - so we save the tokens now
-                auth_manager.user = self.user
+                self.auth_manager.user = self.user
             self.user.insert_or_update()
 
     def get_spotify_list(self, results):
@@ -209,6 +212,9 @@ class SpotUserActions:
                 to_like.add(track_id)
 
         logger.debug(f"Scanned {scanned} songs - recurrent {len(to_like)}")
+
+    def close(self):
+        self.db
 
 
 def reverse_block_chunks(l, size):
