@@ -5,6 +5,10 @@
       listening habits and automate some of the boring tasks.
     </p>
 
+    <div v-if="$store.state.user.authUrl">
+      <a :href="$store.state.user.authUrl"> Connect </a>
+    </div>
+
     <h2>Here is what it does</h2>
     <ul>
       <li>

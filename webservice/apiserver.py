@@ -22,7 +22,15 @@ def get_app(production=True):
                                           '../spotlike.cfg'))
     CORS(app)
 
-    @app.route('/user')
+    @app.route('/api/logout', methods=('POST',))
+    def logout():
+        if 'uid' in flask.session:
+            del flask.session['uid']
+            return dict(status='ok')
+        else:
+            return dict(status='not logged in'), 400
+
+    @app.route('/api/user')
     def get_current_user():
         uid = flask.session.get('uid')
         if not uid:
@@ -31,7 +39,7 @@ def get_app(production=True):
                                   redirect_uri=redirect_uri)
             return dict(  # not a user
                 spotify_connect_url=act.auth_manager.get_authorize_url(),
-            )
+            ), 401
         else:
             user = User.get_by_id(uid)
             # act = SpotUserActions(user=user)
@@ -41,7 +49,7 @@ def get_app(production=True):
                 email=user.email,
             )
 
-    @app.route("/connect")
+    @app.route("/api/connect")
     def connect():
         code = flask.request.args.get("code")
         redirect_uri = flask.url_for('connect', _external=True)

@@ -4,7 +4,7 @@
       {{ pageNotFound }}
     </h1>
     <h1 v-else>
-      {{ otherError }}
+      {{ error.message || otherError }}
     </h1>
   </v-app>
 </template>

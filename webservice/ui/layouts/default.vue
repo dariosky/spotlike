@@ -7,8 +7,9 @@
         </router-link>
         <div id="nav">
           <router-link to="/">Home</router-link>
-          <!-- |-->
-          <!-- <router-link to="/logout">Logout</router-link>-->
+          <router-link v-if="$store.state['user/id']" to="/logout">
+            Logout
+          </router-link>
         </div>
       </v-container>
 
