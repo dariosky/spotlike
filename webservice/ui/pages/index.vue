@@ -6,7 +6,10 @@
     </p>
 
     <div v-if="$store.state.user.authUrl">
-      <a :href="$store.state.user.authUrl"> Connect </a>
+      <a :href="$store.state.user.authUrl" class="button action">
+        <img id="spotify-logo" src="@/assets/spotify.svg" alt="" />
+        Log in with Spotify
+      </a>
     </div>
 
     <h2>Here is what it does</h2>
@@ -30,3 +33,27 @@ export default {
   },
 }
 </script>
+
+<style scoped>
+.button {
+  display: inline-block;
+  padding: 10px 30px;
+  text-decoration: none;
+  border: 1px solid black;
+  margin: 10px auto;
+  font-size: 1.3em;
+  border-radius: 6px;
+}
+
+.action {
+  background-color: #3a833a;
+  color: white;
+}
+
+#spotify-logo {
+  margin-right: 10px;
+  width: 32px;
+  height: 32px;
+  vertical-align: middle;
+}
+</style>
