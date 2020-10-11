@@ -3,6 +3,7 @@ import os
 import flask
 from flask_cors import CORS
 from spotipy import SpotifyOauthError
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from spottools import SpotUserActions, get_auth_manager
 from store import User
@@ -16,11 +17,13 @@ SERVED_EXTENSIONS = {'.jpg', '.ico', '.png', '.map', '.js', '.svg',
                      '.json', '.css', '.txt'}
 
 
-def get_app(production=True):
+def get_app(production=True, proxied=True):
     app = flask.Flask(__name__)
     app.config.from_pyfile(os.environ.get('SPOTLIKE_SETTINGS',
                                           '../spotlike.cfg'))
     CORS(app)
+    if proxied:
+        app.wsgi_app = ProxyFix(app.wsgi_app)
 
     @app.route('/api/logout', methods=('POST',))
     def logout():
@@ -34,7 +37,9 @@ def get_app(production=True):
     def get_current_user():
         uid = flask.session.get('uid')
         if not uid:
-            redirect_uri = flask.url_for('connect', _external=True)
+            absolute_host = app.config['EXT_HOSTNAME']
+
+            redirect_uri = f"{absolute_host}{flask.url_for('connect')}"
             act = SpotUserActions(user=None, connect=False,
                                   redirect_uri=redirect_uri)
             return dict(  # not a user
@@ -47,6 +52,7 @@ def get_app(production=True):
                 id=user.id,
                 name=user.name,
                 email=user.email,
+                picture=user.picture,
             )
 
     @app.route("/api/connect")
@@ -58,9 +64,14 @@ def get_app(production=True):
             auth_manager.get_access_token(code, check_cache=False)
             act = SpotUserActions(user=None, auth_manager=auth_manager)
             flask.session['uid'] = act.user.id
-            return act.user.as_json()
+            # return act.user.as_json()
+            return flask.redirect('/')
         except SpotifyOauthError as e:
             return {"message": str(e)}, 400
+
+    @app.route("/api/redirect")
+    def redir():
+        return flask.redirect('/')
 
     @app.route("/", defaults={"url": ""})
     @app.route('/<path:url>')
@@ -68,7 +79,7 @@ def get_app(production=True):
         """ Handle the page-not-found - apply some backward-compatibility redirect """
         ext = os.path.splitext(url)[-1]
         if ext in SERVED_EXTENSIONS:
-            return flask.send_from_directory('ui/build', url)
+            return flask.send_from_directory('ui/dist', url)
         return flask.render_template("index.html")
 
     return app
@@ -82,8 +93,6 @@ def run_api(host='127.0.0.1', port=3001,
               f"{'bjoern' if bjoern else 'Flask'}"
               f" on http://{host}:{port}")
         if bjoern:
-            # apt-get install libev-dev
-            # apt-get install python3-dev
             bjoern.run(app, host, port)
         else:
             app.run(host=host, port=port, threaded=True, debug=False, use_reloader=False)

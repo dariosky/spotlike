@@ -3,16 +3,17 @@ export default async function ({ store, $axios, error }) {
   if (!store.state.user.id) {
     // eslint-disable-next-line no-unused-vars
     const user = await $axios
-      .$get('http://localhost:4000/api/user')
+      .$get('/user')
+      .then((response) => {
+        store.commit('user/login', response)
+      })
       .catch((err) => {
-        try {
-          if (err.response.status === 401) {
-            // not logged
-            const authUrl = err.response.data.spotify_connect_url
-            store.commit('user/setAuthUrl', authUrl)
-            return
-          }
-        } catch (e) {}
+        if (err.response && err.response.status === 401) {
+          // not logged
+          const authUrl = err.response.data.spotify_connect_url
+          store.commit('user/setAuthUrl', authUrl)
+          return
+        }
         error('Cannot connect to the API')
       })
   }

@@ -12,10 +12,15 @@
       </a>
     </div>
 
+    <div v-if="user.id">
+      You're logged as {{ user.name }}
+      <img :src="user.picture" alt="" class="spotify-profile-pitcture" />
+    </div>
+
     <h2>Here is what it does</h2>
     <ul>
       <li>
-        Sync all the song you like to a playlist - so you can share it with
+        Sync all the song you like to a playlist - so you can share them with
         others.
       </li>
 
@@ -28,6 +33,11 @@
 
 <script>
 export default {
+  computed: {
+    user() {
+      return this.$store.state.user
+    },
+  },
   head: {
     title: 'Automated tasks for your Spotify playlists',
   },
@@ -54,6 +64,13 @@ export default {
   margin-right: 10px;
   width: 32px;
   height: 32px;
+  vertical-align: middle;
+}
+
+.spotify-profile-pitcture {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
   vertical-align: middle;
 }
 </style>

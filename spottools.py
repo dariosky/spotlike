@@ -284,9 +284,9 @@ if __name__ == '__main__':
         # iterate through all the users and
         for user in User.select():
             act = SpotUserActions(user)
-            # act.sync_liked_with_playlist(name='Liked playlist')
             act.auto_like_recurrent()
-            # act.remove_liked_duplicates()
+            act.remove_liked_duplicates()
+            act.sync_liked_with_playlist(name='Liked playlist')
 
         # get a local user
         # act = SpotUserActions()

@@ -1,0 +1,8 @@
+flask
+flask_cors
+bjoern
+
+spotipy
+cachetools
+peewee
+click
