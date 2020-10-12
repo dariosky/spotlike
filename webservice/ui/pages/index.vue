@@ -13,8 +13,9 @@
     </div>
 
     <div v-if="user.id">
-      You're logged as {{ user.name }}
+      Your {{ user.name }}
       <img :src="user.picture" alt="" class="spotify-profile-pitcture" />
+      account is connected - the magic will happen.
     </div>
 
     <h2>Here is what it does</h2>

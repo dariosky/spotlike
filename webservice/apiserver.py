@@ -7,6 +7,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 
 from spottools import SpotUserActions, get_auth_manager
 from store import User
+from webservice.config import get_config
 
 try:
     import bjoern
@@ -17,10 +18,10 @@ SERVED_EXTENSIONS = {'.jpg', '.ico', '.png', '.map', '.js', '.svg',
                      '.json', '.css', '.txt'}
 
 
-def get_app(production=True, proxied=True):
+def get_app(config):
     app = flask.Flask(__name__)
-    app.config.from_pyfile(os.environ.get('SPOTLIKE_SETTINGS',
-                                          '../spotlike.cfg'))
+    app.config['SECRET_KEY'] = config['SECRET_KEY']
+    proxied = config.get("PROXIED", True)
     CORS(app)
     if proxied:
         app.wsgi_app = ProxyFix(app.wsgi_app)
@@ -85,10 +86,11 @@ def get_app(production=True, proxied=True):
     return app
 
 
-def run_api(host='127.0.0.1', port=3001,
-            production=True):
-    app = get_app(production=production)
-    if production:
+def run_api(config):
+    app = get_app(config)
+    host = config.get('HOST', 'localhost')
+    port = config.get('PORT', 4000)
+    if not config.get('DEVSERVER', True):
         print(f"Running production server as "
               f"{'bjoern' if bjoern else 'Flask'}"
               f" on http://{host}:{port}")
@@ -102,4 +104,7 @@ def run_api(host='127.0.0.1', port=3001,
 
 
 if __name__ == '__main__':
-    run_api(host='localhost', port=4000, production=False)
+    environment = os.environ.get('ENV', 'dev')
+    print(f"Running as {environment}")
+    config = get_config(environment)
+    run_api(config)
