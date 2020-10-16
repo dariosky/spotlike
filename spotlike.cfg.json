@@ -1,0 +1,9 @@
+{
+  "SECRET_KEY": "YOUR SECRET KEY",
+  "EXT_HOSTNAME": "https://your-webservice-url.com",
+  "PROXIED": true,
+  "DEVSERVER": true,
+  "HOST": "localhost",
+  "PORT": 4000,
+  "API_PREFIX": "/api",
+}

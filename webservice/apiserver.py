@@ -22,11 +22,13 @@ def get_app(config):
     app = flask.Flask(__name__)
     app.config['SECRET_KEY'] = config['SECRET_KEY']
     proxied = config.get("PROXIED", True)
+    api_prefix = config.get("API_PREFIX", "/api")
+
     CORS(app)
     if proxied:
         app.wsgi_app = ProxyFix(app.wsgi_app)
 
-    @app.route('/api/logout', methods=('POST',))
+    @app.route(f'{api_prefix}/logout', methods=('POST',))
     def logout():
         if 'uid' in flask.session:
             del flask.session['uid']
@@ -34,15 +36,18 @@ def get_app(config):
         else:
             return dict(status='not logged in'), 400
 
-    @app.route('/api/user')
+    def get_redirect_uri():
+        absolute_host = config['EXT_HOSTNAME']
+        redirect_uri = f"{absolute_host}{flask.url_for('connect')}"
+        return redirect_uri
+
+
+    @app.route(f'{api_prefix}/user')
     def get_current_user():
         uid = flask.session.get('uid')
         if not uid:
-            absolute_host = app.config['EXT_HOSTNAME']
-
-            redirect_uri = f"{absolute_host}{flask.url_for('connect')}"
             act = SpotUserActions(user=None, connect=False,
-                                  redirect_uri=redirect_uri)
+                                  redirect_uri=get_redirect_uri())
             return dict(  # not a user
                 spotify_connect_url=act.auth_manager.get_authorize_url(),
             ), 401
@@ -56,10 +61,10 @@ def get_app(config):
                 picture=user.picture,
             )
 
-    @app.route("/api/connect")
+    @app.route(f'{api_prefix}/connect')
     def connect():
         code = flask.request.args.get("code")
-        redirect_uri = flask.url_for('connect', _external=True)
+        redirect_uri = get_redirect_uri()
         try:
             auth_manager = get_auth_manager(None, redirect_uri=redirect_uri)
             auth_manager.get_access_token(code, check_cache=False)
@@ -70,7 +75,7 @@ def get_app(config):
         except SpotifyOauthError as e:
             return {"message": str(e)}, 400
 
-    @app.route("/api/redirect")
+    @app.route(f'{api_prefix}/redirect')
     def redir():
         return flask.redirect('/')
 
