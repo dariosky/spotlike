@@ -8,7 +8,7 @@ import click
 import spotipy
 
 # will get credentials and save them locally
-from store import User, initdb
+from store import User, initdb, Message
 
 scope = ",".join((
     'user-read-email',
@@ -64,7 +64,7 @@ def get_auth_manager(user=None, redirect_uri='http://localhost:3000'):
 
 class SpotUserActions:
     def __init__(self, user=None,
-                 auth_manager = None,
+                 auth_manager=None,
                  connect=True,
                  redirect_uri='http://localhost:3000'):
         initdb()
@@ -86,9 +86,12 @@ class SpotUserActions:
             if user is None:
                 # we didn't have the user - so we save the tokens now
                 self.auth_manager.user = self.user
-            self.user.insert_or_update()
+            created = self.user.insert_or_update()
+            if created:
+                self.msg("Sign up successful")
 
     def get_spotify_list(self, results):
+        """ A generic method to consume the Spotify API paginated results """
         while True:
             for item in results['items']:
                 yield item
@@ -111,7 +114,7 @@ class SpotUserActions:
         playlists = self.get_all_playlists()
         same_name_playlists = list(filter(lambda p: p['name'] == name, playlists))
         if not same_name_playlists:
-            click.echo(f"Creating a new playlist {name}")
+            self.msg(f"Creating a new playlist: {name}")
             playlist = self.spotify.user_playlist_create(self.spotify.current_user()['id'],
                                                          description="All the song you like - synced by Spotlike",
                                                          name=name, public=False)
@@ -134,7 +137,8 @@ class SpotUserActions:
 
         to_add, to_del = sync_merge(likes, playlist_tracks, full=full)
 
-        click.echo(f"Adding {len(to_add)} songs / removing {len(to_del)}")
+        if to_add or to_del:
+            self.msg(f"Adding {len(to_add)} songs / removing {len(to_del)}")
 
         # we add and remove all the needed tracks
         for all_tracks, method in ((to_add, partial(self.spotify.playlist_add_items, position=0)),
@@ -163,15 +167,18 @@ class SpotUserActions:
             track_versions[key].append((track_id, liked['added_at']))
 
         to_unlike = set()
+        messages = []
         for key, versions in track_versions.items():
             if len(versions) > 1:
                 duplicates = versions[:-1]  # all but the last
-                logger.debug(
+                messages.append(
                     f"Found a duplicate for {key} - removing {len(duplicates)}"
                     f" - liked on {[date for dup_id, date in versions]}")
                 to_unlike |= set(dup_id for dup_id, date in duplicates)
+        if messages:
+            self.msg("\n".join(messages))
         if to_unlike:
-            logger.info(f"Unlike {len(to_unlike)} songs")
+            logger.debug(f"Unlike {len(to_unlike)} songs")
             for tracks in reverse_block_chunks(list(to_unlike), 100):
                 self.spotify.current_user_saved_tracks_delete(
                     tracks=tracks,
@@ -213,8 +220,13 @@ class SpotUserActions:
 
         logger.debug(f"Scanned {scanned} songs - recurrent {len(to_like)}")
 
-    def close(self):
-        self.db
+    def msg(self, message):
+        click.echo(message)
+        message = Message(
+            user=self.user,
+            message=message,
+        )
+        message.save()
 
 
 def reverse_block_chunks(l, size):

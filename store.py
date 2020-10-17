@@ -16,6 +16,8 @@ class BaseModel(peewee.Model):
             saved = self.save()
             if not saved:
                 self.save(force_insert=True)
+                return True
+        return False
 
 
 class User(BaseModel):
