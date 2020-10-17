@@ -2,7 +2,7 @@ import logging
 import os
 
 from spottools import SpotUserActions
-from store import User
+from store import User, initdb
 from webservice.config import get_config
 
 
@@ -14,6 +14,7 @@ def run_all_jobs():
         if envfield in config:
             os.environ[envfield] = config[envfield]
 
+    initdb()
     for user in User.select():
         act = SpotUserActions(user)
         act.auto_like_recurrent()

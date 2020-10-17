@@ -1,7 +1,7 @@
 <template>
   <div>
     <p>
-      Connect your Spotify account to add some smart feature around your
+      Connect your Spotify account to add several smart features around your
       listening habits and automate some of the boring tasks.
     </p>
 
@@ -21,12 +21,12 @@
     <h2>Here is what it does</h2>
     <ul>
       <li>
-        Sync all the song you like to a playlist - so you can share them with
-        others.
+        Syncs all of the songs you like to a playlist - so that you can share
+        them with others.
       </li>
 
       <li>
-        Look for duplicates in your liked songs, and keep just the oldest.
+        Looks for duplicates in your liked songs, and only keeps the oldest.
       </li>
     </ul>
   </div>
