@@ -1,6 +1,6 @@
 flask
 flask_cors
-bjoern
+# bjoern
 
 spotipy
 cachetools

@@ -23,6 +23,10 @@ def get_app(config):
     app.config['SECRET_KEY'] = config['SECRET_KEY']
     proxied = config.get("PROXIED", True)
     api_prefix = config.get("API_PREFIX", "/api")
+    for envfield in ('SPOTIPY_CLIENT_SECRET', 'SPOTIPY_CLIENT_ID'):
+        # pass some config to the env - for spotipy
+        if envfield in config:
+            os.environ[envfield] = config[envfield]
 
     CORS(app)
     if proxied:
@@ -40,7 +44,6 @@ def get_app(config):
         absolute_host = config['EXT_HOSTNAME']
         redirect_uri = f"{absolute_host}{flask.url_for('connect')}"
         return redirect_uri
-
 
     @app.route(f'{api_prefix}/user')
     def get_current_user():
@@ -79,20 +82,24 @@ def get_app(config):
     def redir():
         return flask.redirect('/')
 
-    @app.route("/", defaults={"url": ""})
-    @app.route('/<path:url>')
-    def catch_all(url):
-        """ Handle the page-not-found - apply some backward-compatibility redirect """
-        ext = os.path.splitext(url)[-1]
-        if ext in SERVED_EXTENSIONS:
-            return flask.send_from_directory('ui/dist', url)
+    if False:  # let's skip the catchall in the api - we serve via a frontend proxy
+        @app.route("/", defaults={"url": ""})
+        @app.route('/<path:url>')
+        def catch_all(url):
+            """ Handle the page-not-found - apply some backward-compatibility redirect """
+            ext = os.path.splitext(url)[-1]
+            if ext in SERVED_EXTENSIONS:
+                return flask.send_from_directory('ui/dist', url)
+            return flask.render_template("index.html")
+
+    @app.route(f'{api_prefix}/')
+    def root():
         return flask.render_template("index.html")
 
     return app
 
 
 def run_api(config):
-    app = get_app(config)
     host = config.get('HOST', 'localhost')
     port = config.get('PORT', 4000)
     if not config.get('DEVSERVER', True):
@@ -108,8 +115,9 @@ def run_api(config):
         app.run(host=host, port=port, debug=True)
 
 
+environment = os.environ.get('ENV', 'dev')
+app = get_app(get_config(environment))
+
 if __name__ == '__main__':
-    environment = os.environ.get('ENV', 'dev')
     print(f"Running as {environment}")
-    config = get_config(environment)
-    run_api(config)
+    run_api(get_config(environment))
