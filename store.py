@@ -25,6 +25,7 @@ class User(BaseModel):
     picture = peewee.CharField()
     tokens = JSONField()
     join_date = peewee.DateTimeField(default=datetime.datetime.utcnow)
+    is_admin = peewee.BooleanField(default=False)
 
     def as_json(self):
         return {
@@ -54,13 +55,20 @@ class TrackArtist(BaseModel):
 class Play(BaseModel):
     user = peewee.ForeignKeyField(User, backref='played')
     track = peewee.ForeignKeyField(Track)
-    played_at = peewee.DateTimeField()
+    date = peewee.DateTimeField()
 
 
 class Liked(BaseModel):
     # a many to many relation table
-    user = peewee.ForeignKeyField(User),
+    user = peewee.ForeignKeyField(User)
     track = peewee.ForeignKeyField(Track)
+    date = peewee.DateTimeField()
+
+
+class Message(BaseModel):
+    user = peewee.ForeignKeyField(User)
+    message = peewee.CharField()
+    date = peewee.DateTimeField(default=datetime.datetime.utcnow)
 
 
 def closedb():
@@ -71,7 +79,8 @@ def initdb():
     db.connect(reuse_if_open=True)
     db.create_tables((User,
                       Artist, Track, TrackArtist,
-                      Play
+                      Play, Liked,
+                      Message,
                       ))
     atexit.register(closedb)
 
