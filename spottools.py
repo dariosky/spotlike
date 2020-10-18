@@ -110,8 +110,14 @@ class SpotUserActions:
             )
         ]
 
+    def filter_own_playlists(self, playlists):
+        for playlist in playlists:
+            if playlist['owner']['id'] == self.user.id:  # get only the one owned by the user
+                yield playlist
+
     def get_or_create_playlist(self, name):
-        playlists = self.get_all_playlists()
+        playlists = self.filter_own_playlists(self.get_all_playlists())
+
         same_name_playlists = list(filter(lambda p: p['name'] == name, playlists))
         if not same_name_playlists:
             self.msg(f"Creating a new playlist: {name}")
@@ -295,6 +301,7 @@ if __name__ == '__main__':
     def playground():
         # iterate through all the users and
         for user in User.select():
+            logger.debug(f"Processing {user}")
             act = SpotUserActions(user)
 
             # act.auto_like_recurrent()

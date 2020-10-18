@@ -36,6 +36,9 @@ class User(BaseModel):
                       'email', 'picture')
         }
 
+    def __str__(self):
+        return f"{self.email}"
+
 
 class Artist(BaseModel):
     id = peewee.CharField(primary_key=True)

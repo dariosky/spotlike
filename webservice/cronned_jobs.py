@@ -5,6 +5,8 @@ from spottools import SpotUserActions
 from store import User, initdb
 from webservice.config import get_config
 
+logger = logging.getLogger('spotlike.cron')
+
 
 def run_all_jobs():
     environment = os.environ.get('ENV', 'dev')
@@ -16,8 +18,9 @@ def run_all_jobs():
 
     initdb()
     for user in User.select():
+        logger.debug(f"Processing {user}")
         act = SpotUserActions(user)
-        act.auto_like_recurrent()
+        # act.auto_like_recurrent()
         act.remove_liked_duplicates()
         act.sync_liked_with_playlist(name='Liked playlist')
 
