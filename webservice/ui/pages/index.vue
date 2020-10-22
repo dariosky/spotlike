@@ -14,7 +14,7 @@
 
     <div v-if="user.id">
       Your {{ user.name }}
-      <img :src="user.picture" alt="" class="spotify-profile-pitcture" />
+      <img :src="userPicture" alt="" class="spotify-profile-pitcture" />
       account is connected - the magic will happen.
     </div>
 
@@ -33,10 +33,15 @@
 </template>
 
 <script>
+import anonymousPicture from 'assets/anonymous-user.svg'
+
 export default {
   computed: {
     user() {
       return this.$store.state.user
+    },
+    userPicture() {
+      return this.$store.state.user.picture || anonymousPicture
     },
   },
   head: {

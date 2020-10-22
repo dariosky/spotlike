@@ -24,7 +24,7 @@ class User(BaseModel):
     id = peewee.CharField(primary_key=True)
     name = peewee.CharField()
     email = peewee.CharField(unique=True, index=True)
-    picture = peewee.CharField()
+    picture = peewee.CharField(null=True)
     tokens = JSONField()
     join_date = peewee.DateTimeField(default=datetime.datetime.utcnow)
     is_admin = peewee.BooleanField(default=False)
