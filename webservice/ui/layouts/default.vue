@@ -7,9 +7,9 @@
         </router-link>
         <div id="nav">
           <router-link to="/">Home</router-link>
-          <!--          <router-link v-if="$store.state.user" to="/logout">-->
-          <!--            Logout-->
-          <!--          </router-link>-->
+          <router-link v-if="$store.state.user.id" to="/logout">
+            Logout
+          </router-link>
         </div>
       </v-container>
 
@@ -30,9 +30,10 @@
 #nav a {
   font-weight: bold;
   color: #2c3e50;
+  margin: 0 10px;
 }
 
-#nav a.router-link-exact-active {
+#nav a.nuxt-link-exact-active {
   color: #42b983;
 }
 

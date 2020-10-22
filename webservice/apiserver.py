@@ -82,6 +82,11 @@ def get_app(config):
     def redir():
         return flask.redirect('/')
 
+    @app.errorhandler(400)
+    @app.errorhandler(500)
+    def handle_errors(e):
+        return {"error": e.name, "description": e.description}, e.code
+
     if False:  # let's skip the catchall in the api - we serve via a frontend proxy
         @app.route("/", defaults={"url": ""})
         @app.route('/<path:url>')
