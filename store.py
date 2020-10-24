@@ -71,7 +71,7 @@ class Liked(BaseModel):
 
 
 class Message(BaseModel):
-    user = peewee.ForeignKeyField(User)
+    user = peewee.ForeignKeyField(User, backref='messages')
     message = peewee.CharField()
     date = peewee.DateTimeField(default=datetime.datetime.utcnow)
 

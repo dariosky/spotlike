@@ -6,7 +6,7 @@ from spotipy import SpotifyOauthError
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from spottools import SpotUserActions, get_auth_manager
-from store import User
+from store import User, Message
 from webservice.config import get_config
 
 try:
@@ -32,13 +32,26 @@ def get_app(config):
     if proxied:
         app.wsgi_app = ProxyFix(app.wsgi_app)
 
+    def login_required(func):
+        """ Wrapper to ensure user is logged """
+
+        def wrapper(*args, **kwargs):
+            if not current_user():
+                return dict(error='Not logged in'), 401
+            func(*args, **kwargs)
+
+        return wrapper
+
+    def current_user():
+        uid = flask.session.get('uid')
+        if uid:
+            return User.get_by_id(uid)
+
+    @login_required
     @app.route(f'{api_prefix}/logout', methods=('POST',))
     def logout():
-        if 'uid' in flask.session:
-            del flask.session['uid']
-            return dict(status='ok')
-        else:
-            return dict(status='not logged in'), 400
+        del flask.session['uid']
+        return dict(status='ok')
 
     def get_redirect_uri():
         absolute_host = config['EXT_HOSTNAME']
@@ -96,6 +109,23 @@ def get_app(config):
             if ext in SERVED_EXTENSIONS:
                 return flask.send_from_directory('ui/dist', url)
             return flask.render_template("index.html")
+
+    @login_required
+    @app.route(f"{api_prefix}/events")
+    def events():
+        page = flask.request.args.get('page', 1)
+        items = flask.request.args.get('items', 30)
+        messages = current_user().messages.select() \
+            .order_by(Message.date.desc()).paginate(page, items)
+        return {
+            "items": [
+                dict(
+                    id=message.id,
+                    message=message.message,
+                    date=message.date)
+                for message in messages
+            ]
+        }
 
     @app.route(f'{api_prefix}/')
     def root():

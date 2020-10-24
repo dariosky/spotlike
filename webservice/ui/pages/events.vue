@@ -1,8 +1,14 @@
 <template>
   <div>
     <div v-if="!loading">
-      <p>You logged out from this browser.</p>
-      <p>Spotlike will continue doing its magic to your account.</p>
+      <v-list two-line>
+        <v-list-item v-for="item in items" :key="item.id" elevation="1" tile>
+          <v-list-item-content>
+            <v-list-item-title>{{ item.message }}</v-list-item-title>
+            <v-list-item-subtitle>{{ item.date }}</v-list-item-subtitle>
+          </v-list-item-content>
+        </v-list-item>
+      </v-list>
     </div>
     <div v-else>
       <v-progress-circular indeterminate color="primary"></v-progress-circular>
@@ -17,20 +23,18 @@
 export default {
   async asyncData({ $axios, store }) {
     return await $axios
-      .$post('/logout')
+      .$get('/events')
       .then((response) => {
-        store.commit('user/login', { id: null })
         return {
           loading: false,
           error: null,
+          ...response,
         }
       })
       .catch((err) => {
-        if (err.response && err.response.status === 401) {
-          return {
-            error: err.response.data,
-            loading: false,
-          }
+        return {
+          error: err.response.data,
+          loading: false,
         }
       })
   },
@@ -38,6 +42,7 @@ export default {
     return {
       loading: true,
       error: null,
+      items: [],
     }
   },
   mounted() {
