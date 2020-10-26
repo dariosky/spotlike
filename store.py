@@ -11,13 +11,24 @@ class BaseModel(peewee.Model):
     class Meta:
         database = db
 
-    def insert_or_update(self):
+    def insert_or_update(self, **kwargs):
+        for field, value in kwargs.items():
+            setattr(self, field, value)
+        passed_fields = {field for field in kwargs}
+
         if self.dirty_fields:
-            saved = self.save()
-            if not saved:
+            Model = self._meta.model
+            try:
+                existing = Model.get_by_id(self._pk)
+                changed_fields = []
+                for field in self.dirty_fields:
+                    if getattr(existing, field.name) != getattr(self, field.name) and field.name in passed_fields:
+                        changed_fields.append(field)
+                self.save(only=changed_fields)  # change only the changed fields
+            except Model.DoesNotExist:
                 self.save(force_insert=True)
-                return True
-        return False
+                self._new = True
+        return self
 
 
 class User(BaseModel):
@@ -43,12 +54,21 @@ class User(BaseModel):
 class Artist(BaseModel):
     id = peewee.CharField(primary_key=True)
     name = peewee.CharField()
+    picture = peewee.CharField(null=True)
+
+
+class Album(BaseModel):
+    id = peewee.CharField(primary_key=True)
+    name = peewee.CharField()
+    picture = peewee.CharField(null=True)
+    release_date = peewee.DateField()
 
 
 class Track(BaseModel):
     id = peewee.CharField(primary_key=True)
     title = peewee.CharField()
     duration = peewee.IntegerField()
+    album = peewee.ForeignKeyField(Album)
 
 
 class TrackArtist(BaseModel):
@@ -74,6 +94,7 @@ class Message(BaseModel):
     user = peewee.ForeignKeyField(User, backref='messages')
     message = peewee.CharField()
     date = peewee.DateTimeField(default=datetime.datetime.utcnow)
+    msg_type = peewee.CharField(null=True)
 
 
 def closedb():

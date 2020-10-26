@@ -77,18 +77,19 @@ class SpotUserActions:
             spotify_user = self.spotify.current_user()
 
             # we are initialized - let's save the user
-            self.user = User(id=spotify_user['id'], name=spotify_user['display_name'],
-                             email=spotify_user['email'],
-                             picture=spotify_user['images'][0]['url'] if spotify_user['images'] else None,
-                             tokens=self.auth_manager.token_info,
-                             )
+            self.user = User(id=spotify_user['id']) \
+                .insert_or_update(**dict(name=spotify_user['display_name'],
+                                         email=spotify_user['email'],
+                                         picture=spotify_user['images'][0]['url'] if spotify_user['images'] else None,
+                                         tokens=self.auth_manager.token_info,
+                                         ))
 
             if user is None:
                 # we didn't have the user - so we save the tokens now
                 self.auth_manager.user = self.user
             created = self.user.insert_or_update()
-            if created:
-                self.msg("Sign up successful")
+            if getattr(self, '_new', False):
+                self.msg("Sign up successful", msg_type='signup')
 
     def get_spotify_list(self, results):
         """ A generic method to consume the Spotify API paginated results """
@@ -144,7 +145,11 @@ class SpotUserActions:
         to_add, to_del = sync_merge(likes, playlist_tracks, full=full)
 
         if to_add or to_del:
-            self.msg(f"Adding {len(to_add)} songs / removing {len(to_del)}")
+            msg = filter(lambda x: x is not None, [
+                f"Added {len(to_add)}" if to_add else None,
+                f"Removed {len(to_del)}" if to_del else None,
+            ])
+            self.msg(" / ".join(msg) + " songs", msg_type='synclike')
 
         # we add and remove all the needed tracks
         for all_tracks, method in ((to_add, partial(self.spotify.playlist_add_items, position=0)),
@@ -226,11 +231,12 @@ class SpotUserActions:
 
         logger.debug(f"Scanned {scanned} songs - recurrent {len(to_like)}")
 
-    def msg(self, message):
+    def msg(self, message, msg_type=None):
         click.echo(message)
         message = Message(
             user=self.user,
             message=message,
+            msg_type=msg_type,
         )
         message.save()
 
@@ -301,6 +307,8 @@ if __name__ == '__main__':
     def playground():
         # iterate through all the users and
         for user in User.select():
+            if not user.is_admin:
+                continue
             logger.debug(f"Processing {user}")
             act = SpotUserActions(user)
 
