@@ -8,7 +8,8 @@ import click
 import spotipy
 
 # will get credentials and save them locally
-from store import User, initdb, Message, Track, Artist, TrackArtist, Album, Liked
+from store import (User, initdb, Message, Track,
+                   Artist, TrackArtist, Album, Liked, Play)
 
 scope = ",".join((
     'user-read-email',
@@ -67,14 +68,19 @@ ALLOWED_DATETIME_FORMATS = (
     "%Y-%m-%d %H:%M:%S.%f",
     '%Y-%m-%d %H:%M:%S',
     '%Y-%m-%dT%H:%M:%SZ',
+    "%Y-%m-%dT%H:%M:%S.%fZ",
     '%Y-%m-%d',
-    '%Y-%m-%d %H:%M'
+    '%Y-%m-%d %H:%M',
     '%Y-%m',
 )
 
 
 def parse_date(date_str):
     if isinstance(date_str, str):
+        if len(date_str) == 4:
+            date_str += "-01-01"  # %Y, let's add Jan01
+        elif len(date_str) == 7:
+            date_str += "-01"  # %Y-%M, let's add the day to be able to parse
         date_str = date_str.strip()
         for date_fmt in ALLOWED_DATETIME_FORMATS:
             try:
@@ -88,37 +94,33 @@ def parse_date(date_str):
 
 
 def store_track(track):
-    print(track)
     artists = []
     for artist in track.get('artists', []):
-        a = Artist(
+        a = Artist().insert_or_update(
             id=artist['id'],
             name=artist['name'],
         )
-        a.save()
         artists.append(a)
 
     if track.get('album'):
-        album = Album(
+        album = Album().insert_or_update(
             id=track['album']['id'],
             name=track['album']['name'],
             release_date=parse_date(track['album']['release_date']),
+            release_date_precision=track['album']['release_date_precision'],
             picture=track['album']['images'][0] if track['album']['images'] else None,
         )
-        album.save()
     else:
         album = None
 
-    t = Track(
+    t = Track().insert_or_update(
         id=track['id'],
         duration=track['duration_ms'],
         title=track['name'],
         album=album
     )
-    t.save()
     for a in artists:
-        TrackArtist(track=t,
-                    artist=a).save()
+        TrackArtist().insert_or_update(track=t, artist=a)
     return t
 
 
@@ -254,6 +256,10 @@ class SpotUserActions:
                     tracks=tracks,
                 )
 
+    def recently_played(self, after=None):
+        for played in self.get_spotify_list(self.spotify.current_user_recently_played()):
+            yield played
+
     def auto_like_recurrent(self, played_times=5, day_period=30, store=True):
         """ Autolike songs played at least `played_times` times over the `day_period` """
         check_history_from = datetime.datetime.utcnow() - datetime.timedelta(days=day_period)
@@ -299,11 +305,18 @@ class SpotUserActions:
         )
         message.save()
 
-    def collect_recent(self):
+    def collect_likes(self):
         for liked in self.liked_songs():
             track = store_track(liked['track'])
-            Liked(track=track, user=self.user,
-                  date=parse_date(liked['added_at']))
+            like = Liked().insert_or_update(track=track, user=self.user,
+                                            date=parse_date(liked['added_at']))
+
+    def collect_recent(self):
+        for played in self.recently_played():
+            track = store_track(played['track'])
+            print(track)
+            Play(track=track, user=self.user,
+                 date=parse_date(played['played_at'])).save()
 
 
 def reverse_block_chunks(l, size):

@@ -23,6 +23,7 @@ def run_all_jobs():
         # act.auto_like_recurrent()
         act.remove_liked_duplicates()
         act.sync_liked_with_playlist(name='Liked playlist')
+        act.collect_recent()
 
 
 if __name__ == '__main__':

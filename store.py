@@ -62,14 +62,15 @@ class Album(BaseModel):
     id = peewee.CharField(primary_key=True)
     name = peewee.CharField()
     picture = peewee.CharField(null=True)
-    release_date = peewee.DateField()
+    release_date = peewee.DateField(null=True)
+    release_date_precision = peewee.CharField(null=True)
 
 
 class Track(BaseModel):
     id = peewee.CharField(primary_key=True)
     title = peewee.CharField()
     duration = peewee.IntegerField()
-    album = peewee.ForeignKeyField(Album)
+    album = peewee.ForeignKeyField(Album, null=True)
 
 
 class TrackArtist(BaseModel):
@@ -105,7 +106,8 @@ def closedb():
 def initdb():
     db.connect(reuse_if_open=True)
     db.create_tables((User,
-                      Artist, Track, TrackArtist, Album,
+                      Artist, TrackArtist,
+                      Album, Track,
                       Play, Liked,
                       Message,
                       ))
