@@ -7,3 +7,6 @@ __pycache__
 spotlike.db
 *.cfg.*.json
 *.sh
+
+# it's nice to have a file to play with locally
+playground.py

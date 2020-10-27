@@ -8,7 +8,7 @@ import click
 import spotipy
 
 # will get credentials and save them locally
-from store import User, initdb, Message
+from store import User, initdb, Message, Track, Artist, TrackArtist, Album, Liked
 
 scope = ",".join((
     'user-read-email',
@@ -50,8 +50,9 @@ class StoredSpotifyOauth(spotipy.SpotifyOAuth):
         if not self.user:
             # logger.warning("Skipping tokens save - without a user")
             return
-        self.user.tokens = token_info
-        self.user.save()
+        self.user.insert_or_update(
+            tokens=token_info
+        )
 
 
 def get_auth_manager(user=None, redirect_uri='http://localhost:3000'):
@@ -60,6 +61,65 @@ def get_auth_manager(user=None, redirect_uri='http://localhost:3000'):
                               redirect_uri=redirect_uri,
                               # show_dialog=True,
                               )
+
+
+ALLOWED_DATETIME_FORMATS = (
+    "%Y-%m-%d %H:%M:%S.%f",
+    '%Y-%m-%d %H:%M:%S',
+    '%Y-%m-%dT%H:%M:%SZ',
+    '%Y-%m-%d',
+    '%Y-%m-%d %H:%M'
+    '%Y-%m',
+)
+
+
+def parse_date(date_str):
+    if isinstance(date_str, str):
+        date_str = date_str.strip()
+        for date_fmt in ALLOWED_DATETIME_FORMATS:
+            try:
+                return datetime.datetime.strptime(date_str, date_fmt)
+            except ValueError:
+                pass
+        raise ValueError(
+            f"Invalid date: '{date_str}', please pass a datetime or a string format"
+        )
+    return date_str
+
+
+def store_track(track):
+    print(track)
+    artists = []
+    for artist in track.get('artists', []):
+        a = Artist(
+            id=artist['id'],
+            name=artist['name'],
+        )
+        a.save()
+        artists.append(a)
+
+    if track.get('album'):
+        album = Album(
+            id=track['album']['id'],
+            name=track['album']['name'],
+            release_date=parse_date(track['album']['release_date']),
+            picture=track['album']['images'][0] if track['album']['images'] else None,
+        )
+        album.save()
+    else:
+        album = None
+
+    t = Track(
+        id=track['id'],
+        duration=track['duration_ms'],
+        title=track['name'],
+        album=album
+    )
+    t.save()
+    for a in artists:
+        TrackArtist(track=t,
+                    artist=a).save()
+    return t
 
 
 class SpotUserActions:
@@ -87,7 +147,6 @@ class SpotUserActions:
             if user is None:
                 # we didn't have the user - so we save the tokens now
                 self.auth_manager.user = self.user
-            created = self.user.insert_or_update()
             if getattr(self, '_new', False):
                 self.msg("Sign up successful", msg_type='signup')
 
@@ -240,6 +299,12 @@ class SpotUserActions:
         )
         message.save()
 
+    def collect_recent(self):
+        for liked in self.liked_songs():
+            track = store_track(liked['track'])
+            Liked(track=track, user=self.user,
+                  date=parse_date(liked['added_at']))
+
 
 def reverse_block_chunks(l, size):
     """ iterate through the list with a given size so the blocks keep their inner order,
@@ -297,28 +362,3 @@ def sync_merge(likes, playlist_tracks, full=True):
         return sync_merge_full(likes, playlist_tracks)
     else:
         return sync_merge_fast(likes, playlist_tracks)
-
-
-if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s: %(message)s')
-    logging.getLogger('spotlike').setLevel(logging.DEBUG)
-
-
-    def playground():
-        # iterate through all the users and
-        for user in User.select():
-            if not user.is_admin:
-                continue
-            logger.debug(f"Processing {user}")
-            act = SpotUserActions(user)
-
-            # act.auto_like_recurrent()
-            act.remove_liked_duplicates()
-            act.sync_liked_with_playlist(name='Liked playlist')
-
-        # get a local user
-        # act = SpotUserActions()
-        # act.sync_liked_with_playlist(name='Liked playlist')
-
-
-    playground()

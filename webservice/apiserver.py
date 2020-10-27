@@ -7,7 +7,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 
 from spottools import SpotUserActions, get_auth_manager
 from store import User, Message
-from webservice.config import get_config
+from webservice.config import get_config, activate_config
 
 try:
     import bjoern
@@ -23,10 +23,7 @@ def get_app(config):
     app.config['SECRET_KEY'] = config['SECRET_KEY']
     proxied = config.get("PROXIED", True)
     api_prefix = config.get("API_PREFIX", "/api")
-    for envfield in ('SPOTIPY_CLIENT_SECRET', 'SPOTIPY_CLIENT_ID'):
-        # pass some config to the env - for spotipy
-        if envfield in config:
-            os.environ[envfield] = config[envfield]
+    activate_config(config)
 
     CORS(app)
     if proxied:

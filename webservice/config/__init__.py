@@ -12,3 +12,13 @@ def get_config(environment):
         config = json.load(f)
     assert "SECRET_KEY" in config
     return config
+
+
+def activate_config(config=None):
+    if config is None:
+        environment = os.environ.get('ENV', 'dev')
+        config = get_config(environment)
+    for envfield in ('SPOTIPY_CLIENT_SECRET', 'SPOTIPY_CLIENT_ID'):
+        # pass some config to the env - for spotipy
+        if envfield in config:
+            os.environ[envfield] = config[envfield]

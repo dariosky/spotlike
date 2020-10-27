@@ -24,7 +24,8 @@ class BaseModel(peewee.Model):
                 for field in self.dirty_fields:
                     if getattr(existing, field.name) != getattr(self, field.name) and field.name in passed_fields:
                         changed_fields.append(field)
-                self.save(only=changed_fields)  # change only the changed fields
+                if changed_fields:
+                    self.save(only=changed_fields)  # change only the changed fields
             except Model.DoesNotExist:
                 self.save(force_insert=True)
                 self._new = True
@@ -104,7 +105,7 @@ def closedb():
 def initdb():
     db.connect(reuse_if_open=True)
     db.create_tables((User,
-                      Artist, Track, TrackArtist,
+                      Artist, Track, TrackArtist, Album,
                       Play, Liked,
                       Message,
                       ))
