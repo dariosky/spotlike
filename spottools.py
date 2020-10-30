@@ -314,9 +314,12 @@ class SpotUserActions:
     def collect_recent(self):
         for played in self.recently_played():
             track = store_track(played['track'])
-            print(track)
-            Play(track=track, user=self.user,
-                 date=parse_date(played['played_at'])).save()
+
+            try:
+                Play(track=track, user=self.user,
+                     date=parse_date(played['played_at'])).save()
+            except ValueError:
+                break
 
 
 def reverse_block_chunks(l, size):

@@ -84,12 +84,18 @@ class Play(BaseModel):
     track = peewee.ForeignKeyField(Track)
     date = peewee.DateTimeField()
 
+    class Meta:
+        primary_key = peewee.CompositeKey('user', 'track', 'date')
+
 
 class Liked(BaseModel):
     # a many to many relation table
     user = peewee.ForeignKeyField(User)
     track = peewee.ForeignKeyField(Track)
     date = peewee.DateTimeField()
+
+    class Meta:
+        primary_key = peewee.CompositeKey('user', 'track', 'date')
 
 
 class Message(BaseModel):
