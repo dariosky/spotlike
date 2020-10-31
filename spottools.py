@@ -5,11 +5,12 @@ from functools import partial
 from typing import Dict
 
 import click
+import peewee
 import spotipy
 
 # will get credentials and save them locally
 from store import (User, initdb, Message, Track,
-                   Artist, TrackArtist, Album, Liked, Play)
+                   Artist, TrackArtist, Album, Liked, Play, AlbumArtist, db)
 
 scope = ",".join((
     'user-read-email',
@@ -110,6 +111,12 @@ def store_track(track):
             release_date_precision=track['album']['release_date_precision'],
             picture=track['album']['images'][0] if track['album']['images'] else None,
         )
+        for artist in track['album'].get('artists', []):
+            a = Artist().insert_or_update(
+                id=artist['id'],
+                name=artist['name'],
+            )
+            AlbumArtist().insert_or_update(album=album, artist=a)
     else:
         album = None
 
@@ -182,7 +189,7 @@ class SpotUserActions:
 
         same_name_playlists = list(filter(lambda p: p['name'] == name, playlists))
         if not same_name_playlists:
-            self.msg(f"Creating a new playlist: {name}")
+            self.msg(f"Creating a new playlist: {name}", msg_type='playlist-create')
             playlist = self.spotify.user_playlist_create(self.spotify.current_user()['id'],
                                                          description="All the song you like - synced by Spotlike",
                                                          name=name, public=False)
@@ -248,7 +255,7 @@ class SpotUserActions:
                     f" - liked on {[date for dup_id, date in versions]}")
                 to_unlike |= set(dup_id for dup_id, date in duplicates)
         if messages:
-            self.msg("\n".join(messages))
+            self.msg("\n".join(messages), msg_type='duplicate')
         if to_unlike:
             logger.debug(f"Unlike {len(to_unlike)} songs")
             for tracks in reverse_block_chunks(list(to_unlike), 100):
@@ -306,20 +313,34 @@ class SpotUserActions:
         message.save()
 
     def collect_likes(self):
-        for liked in self.liked_songs():
-            track = store_track(liked['track'])
-            like = Liked().insert_or_update(track=track, user=self.user,
-                                            date=parse_date(liked['added_at']))
+        added = 0
+        with db.atomic():
+            for liked in self.liked_songs():
+                track = store_track(liked['track'])
+                try:
+                    l = Liked(track=track, user=self.user,
+                              date=parse_date(liked['added_at']))
+                    l.save(force_insert=True)
+                    added += 1
+                except peewee.IntegrityError:
+                    break
+        if added:
+            logger.debug(f"Added {added} likes")
 
     def collect_recent(self):
-        for played in self.recently_played():
-            track = store_track(played['track'])
+        added = 0
+        with db.atomic():
+            for played in self.recently_played():
+                track = store_track(played['track'])
 
-            try:
-                Play(track=track, user=self.user,
-                     date=parse_date(played['played_at'])).save()
-            except ValueError:
-                break
+                try:
+                    Play(track=track, user=self.user,
+                         date=parse_date(played['played_at'])).save(force_insert=True)
+                    added += 1
+                except peewee.IntegrityError:
+                    break
+        if added:
+            logger.debug(f"Added {added} recent")
 
 
 def reverse_block_chunks(l, size):

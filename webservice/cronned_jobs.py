@@ -24,6 +24,7 @@ def run_all_jobs():
         act.remove_liked_duplicates()
         act.sync_liked_with_playlist(name='Liked playlist')
         act.collect_recent()
+        act.collect_likes()
 
 
 if __name__ == '__main__':

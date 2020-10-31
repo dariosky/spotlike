@@ -79,6 +79,12 @@ class TrackArtist(BaseModel):
     artist = peewee.ForeignKeyField(Artist)
 
 
+class AlbumArtist(BaseModel):
+    # a many to many relation table
+    album = peewee.ForeignKeyField(Album)
+    artist = peewee.ForeignKeyField(Artist)
+
+
 class Play(BaseModel):
     user = peewee.ForeignKeyField(User, backref='played')
     track = peewee.ForeignKeyField(Track)
@@ -90,7 +96,7 @@ class Play(BaseModel):
 
 class Liked(BaseModel):
     # a many to many relation table
-    user = peewee.ForeignKeyField(User)
+    user = peewee.ForeignKeyField(User, backref='liked')
     track = peewee.ForeignKeyField(Track)
     date = peewee.DateTimeField()
 
@@ -112,8 +118,9 @@ def closedb():
 def initdb():
     db.connect(reuse_if_open=True)
     db.create_tables((User,
+                      Track,
                       Artist, TrackArtist,
-                      Album, Track,
+                      Album, AlbumArtist,
                       Play, Liked,
                       Message,
                       ))
