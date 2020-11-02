@@ -55,6 +55,10 @@ def get_app(config):
         redirect_uri = f"{absolute_host}{flask.url_for('connect')}"
         return redirect_uri
 
+    @app.route(f'{api_prefix}/status')
+    def get_status():
+        return {"status": "OK"}
+
     @app.route(f'{api_prefix}/user')
     def get_current_user():
         uid = flask.session.get('uid')
