@@ -1,8 +1,8 @@
-flask
+flask==1.1.2
 flask_cors
 # bjoern
 
-spotipy
+spotipy==2.16.1
+peewee==3.13.3
 cachetools
-peewee
 click

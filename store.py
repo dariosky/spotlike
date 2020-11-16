@@ -78,11 +78,17 @@ class TrackArtist(BaseModel):
     track = peewee.ForeignKeyField(Track)
     artist = peewee.ForeignKeyField(Artist)
 
+    class Meta:
+        primary_key = peewee.CompositeKey('track', 'artist')
+
 
 class AlbumArtist(BaseModel):
     # a many to many relation table
     album = peewee.ForeignKeyField(Album)
     artist = peewee.ForeignKeyField(Artist)
+
+    class Meta:
+        primary_key = peewee.CompositeKey('album', 'artist')
 
 
 class Play(BaseModel):
