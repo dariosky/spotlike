@@ -11,15 +11,26 @@ class BaseModel(peewee.Model):
     class Meta:
         database = db
 
+    def get_by_any_id(self, **kwargs):
+        Model = self._meta.model
+        if isinstance(self._pk, tuple):
+            key = {
+                k.name: kwargs[k.name]
+                for k in self._meta.get_primary_keys()
+            }
+            return Model.get(**key)
+        else:
+            return Model.get_by_id(self._pk)
+
     def insert_or_update(self, **kwargs):
-        for field, value in kwargs.items():
+        for field, value in kwargs.items(): \
             setattr(self, field, value)
         passed_fields = {field for field in kwargs}
 
         if self.dirty_fields:
             Model = self._meta.model
             try:
-                existing = Model.get_by_id(self._pk)
+                existing = self.get_by_any_id(**kwargs)
                 changed_fields = []
                 for field in self.dirty_fields:
                     if getattr(existing, field.name) != getattr(self, field.name) and field.name in passed_fields:

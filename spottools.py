@@ -124,7 +124,7 @@ def store_track(track):
         id=track['id'],
         duration=track['duration_ms'],
         title=track['name'],
-        album=album
+        album=album,
     )
     for a in artists:
         TrackArtist().insert_or_update(track=t, artist=a)
