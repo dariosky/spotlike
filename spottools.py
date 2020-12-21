@@ -109,7 +109,7 @@ def store_track(track):
             name=track['album']['name'],
             release_date=parse_date(track['album']['release_date']),
             release_date_precision=track['album']['release_date_precision'],
-            picture=track['album']['images'][0] if track['album']['images'] else None,
+            picture=track['album']['images'][0]['url'] if track['album']['images'] else None,
         )
         for artist in track['album'].get('artists', []):
             a = Artist().insert_or_update(
@@ -140,7 +140,8 @@ class SpotUserActions:
         # we use a custom client_credentials_manager that writes in the DB
         self.auth_manager = auth_manager or get_auth_manager(user, redirect_uri=redirect_uri)
 
-        self.spotify = spotipy.Spotify(auth_manager=self.auth_manager)
+        self.spotify = spotipy.Spotify(auth_manager=self.auth_manager,
+                                       requests_timeout=30)
 
         if connect:
             spotify_user = self.spotify.current_user()
@@ -208,7 +209,7 @@ class SpotUserActions:
         playlist_tracks = self.get_spotify_list(self.spotify.playlist_items(playlist['id'],
                                                                             additional_types=('track',)
                                                                             ))
-        likes = self.liked_songs()
+        likes = self.cached_likes()
 
         to_add, to_del = sync_merge(likes, playlist_tracks, full=full)
 
@@ -229,7 +230,13 @@ class SpotUserActions:
                     tracks,
                 )
 
+    def cached_likes(self):
+        likes = list(self.liked_songs())
+        self.cached_likes = lambda: likes  # replace the property
+        return likes
+
     def liked_songs(self):
+        logger.debug("Getting user likes")
         yield from self.get_spotify_list(
             self.spotify.current_user_saved_tracks(limit=50)
         )
@@ -237,7 +244,7 @@ class SpotUserActions:
     def remove_liked_duplicates(self):
         track_versions: Dict[str:list] = defaultdict(list)  # track key - list of (track_id, date)
         # we keep the date when a song was liked - so we can show it to the user
-        for liked in self.liked_songs():
+        for liked in self.cached_likes():
             track_id = liked['track']['id']
             track_duration = liked['track']['duration_ms']
             track_name = liked['track']['name']
@@ -257,11 +264,21 @@ class SpotUserActions:
         if messages:
             self.msg("\n".join(messages), msg_type='duplicate')
         if to_unlike:
-            logger.debug(f"Unlike {len(to_unlike)} songs")
-            for tracks in reverse_block_chunks(list(to_unlike), 100):
-                self.spotify.current_user_saved_tracks_delete(
-                    tracks=tracks,
-                )
+            self.unlike_tracks(to_unlike)
+
+    def unlike_tracks(self, to_unlike):
+        logger.debug(f"Unlike {len(to_unlike)} songs")
+
+        for tracks in reverse_block_chunks(list(to_unlike), 100):
+            self.spotify.current_user_saved_tracks_delete(
+                tracks=tracks,
+            )
+        if isinstance(self.cached_likes, list):
+            # filter the unliked_tracks
+            self.cached_likes = [
+                track for track in self.cached_likes
+                if track not in to_unlike
+            ]
 
     def recently_played(self, after=None):
         for played in self.get_spotify_list(self.spotify.current_user_recently_played()):
@@ -315,7 +332,7 @@ class SpotUserActions:
     def collect_likes(self):
         added = 0
         with db.atomic():
-            for liked in self.liked_songs():
+            for liked in self.cached_likes():
                 track = store_track(liked['track'])
                 try:
                     l = Liked(track=track, user=self.user,
