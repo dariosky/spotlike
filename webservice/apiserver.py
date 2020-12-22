@@ -1,8 +1,12 @@
+import json
 import os
+import traceback
 
 import flask
+import requests
 from flask_cors import CORS
 from spotipy import SpotifyOauthError
+from werkzeug.exceptions import NotFound
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from spottools import SpotUserActions, get_auth_manager
@@ -24,6 +28,17 @@ def get_app(config):
     proxied = config.get("PROXIED", True)
     api_prefix = config.get("API_PREFIX", "/api")
     activate_config(config)
+    error_log_endpoint = config.get('WEBHOOK_LOGGER')
+    error_log_session = requests.session() if error_log_endpoint else None
+
+    def log_error(message):
+        if not error_log_endpoint:
+            return
+        error_log_session.post(
+            error_log_endpoint,
+            headers={"Content-type": "application/json"},
+            json={"text": message}
+        )
 
     CORS(app)
     if proxied:
@@ -131,6 +146,14 @@ def get_app(config):
     @app.route(f'{api_prefix}/')
     def root():
         return flask.render_template("index.html")
+
+    @app.errorhandler(Exception)
+    def handle_500(e):
+        if not isinstance(e, NotFound):
+            error_tb = traceback.format_exc()
+            log_error(f"Error or {flask.request.path} - user {current_user()}: {e}\n"
+                      f"```{error_tb}```")
+        return app.finalize_request(e, from_error_handler=True)
 
     return app
 
