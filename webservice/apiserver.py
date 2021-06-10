@@ -5,12 +5,13 @@ import traceback
 import flask
 import requests
 from flask_cors import CORS
+from peewee import JOIN
 from spotipy import SpotifyOauthError
 from werkzeug.exceptions import NotFound
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from spottools import SpotUserActions, get_auth_manager
-from store import User, Message
+from store import User, Message, Play, Track, Album, Artist, TrackArtist, AlbumArtist
 from webservice.config import get_config, activate_config
 
 try:
@@ -30,9 +31,10 @@ def get_app(config):
     activate_config(config)
     error_log_endpoint = config.get('WEBHOOK_LOGGER')
     error_log_session = requests.session() if error_log_endpoint else None
+    debug = config.get('DEVSERVER', True)
 
     def log_error(message):
-        if not error_log_endpoint:
+        if not error_log_endpoint or debug:
             return
         error_log_session.post(
             error_log_endpoint,
@@ -60,7 +62,7 @@ def get_app(config):
             return User.get_by_id(uid)
 
     @login_required
-    @app.route(f'{api_prefix}/logout', methods=('POST',))
+    @app.post(f'{api_prefix}/logout')
     def logout():
         del flask.session['uid']
         return dict(status='ok')
@@ -70,11 +72,11 @@ def get_app(config):
         redirect_uri = f"{absolute_host}{flask.url_for('connect')}"
         return redirect_uri
 
-    @app.route(f'{api_prefix}/status')
+    @app.get(f'{api_prefix}/status')
     def get_status():
         return {"status": "OK"}
 
-    @app.route(f'{api_prefix}/user')
+    @app.get(f'{api_prefix}/user')
     def get_current_user():
         uid = flask.session.get('uid')
         if not uid:
@@ -93,7 +95,7 @@ def get_app(config):
                 picture=user.picture,
             )
 
-    @app.route(f'{api_prefix}/connect')
+    @app.get(f'{api_prefix}/connect')
     def connect():
         code = flask.request.args.get("code")
         redirect_uri = get_redirect_uri()
@@ -107,7 +109,7 @@ def get_app(config):
         except SpotifyOauthError as e:
             return {"message": str(e)}, 400
 
-    @app.route(f'{api_prefix}/redirect')
+    @app.get(f'{api_prefix}/redirect')
     def redir():
         return flask.redirect('/')
 
@@ -117,8 +119,8 @@ def get_app(config):
         return {"error": e.name, "description": e.description}, e.code
 
     if False:  # let's skip the catchall in the api - we serve via a frontend proxy
-        @app.route("/", defaults={"url": ""})
-        @app.route('/<path:url>')
+        @app.get("/", defaults={"url": ""})
+        @app.get('/<path:url>')
         def catch_all(url):
             """ Handle the page-not-found - apply some backward-compatibility redirect """
             ext = os.path.splitext(url)[-1]
@@ -127,7 +129,7 @@ def get_app(config):
             return flask.render_template("index.html")
 
     @login_required
-    @app.route(f"{api_prefix}/events")
+    @app.get(f"{api_prefix}/events")
     def events():
         page = flask.request.args.get('page', 1)
         items = flask.request.args.get('items', 30)
@@ -143,7 +145,56 @@ def get_app(config):
             ]
         }
 
-    @app.route(f'{api_prefix}/')
+    @login_required
+    @app.get(f"{api_prefix}/recents")
+    def recents():
+        page = flask.request.args.get('page', 1)
+        items = flask.request.args.get('items', 30)
+        artist_join_predicate = ((TrackArtist.artist == Artist.id) |
+                                 ((~TrackArtist.artist) & (AlbumArtist.artist == Artist.id)))
+
+        recents = (current_user().played.select(Play.date, Track, Artist)
+                   .join(Track)
+                   .join(Album, JOIN.LEFT_OUTER)
+                   .join_from(Track, TrackArtist, JOIN.LEFT_OUTER)
+                   .join_from(Album, AlbumArtist, JOIN.LEFT_OUTER)
+                   .join_from(Track, Artist, JOIN.LEFT_OUTER, on=artist_join_predicate)
+                   .order_by(Play.date.desc()).paginate(page, items)
+                   )
+
+        def get_picture(recent):
+            album_picture = recent.track.album.picture
+            if not album_picture:
+                return
+            try:
+                album_picture_object = json.loads(album_picture)
+                return album_picture_object['url']
+            except ValueError:
+                return album_picture
+
+        return {
+            "items": [
+                dict(
+                    id=recent.id,
+                    track=dict(
+                        id=recent.track.id,
+                        title=recent.track.title,
+                        album=dict(
+                            id=recent.track.album.id,
+                            name=recent.track.album.name,
+                            picture=get_picture(recent),
+                        ),
+                        artist=dict(
+                            id=recent.track.artist.id,
+                            name=recent.track.artist.name,
+                        )
+                    ),
+                    date=recent.date)
+                for recent in recents
+            ]
+        }
+
+    @app.get(f'{api_prefix}/')
     def root():
         return flask.render_template("index.html")
 
@@ -161,7 +212,8 @@ def get_app(config):
 def run_api(config):
     host = config.get('HOST', 'localhost')
     port = config.get('PORT', 4000)
-    if not config.get('DEVSERVER', True):
+    debug = config.get('DEVSERVER', True)
+    if not debug:
         print(f"Running production server as "
               f"{'bjoern' if bjoern else 'Flask'}"
               f" on http://{host}:{port}")

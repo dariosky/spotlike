@@ -192,7 +192,7 @@ class SpotUserActions:
         if not same_name_playlists:
             self.msg(f"Creating a new playlist: {name}", msg_type='playlist-create')
             playlist = self.spotify.user_playlist_create(self.spotify.current_user()['id'],
-                                                         description="All the song you like - synced by Spotlike",
+                                                         description="All the songs you like - synced by Spotlike",
                                                          name=name, public=False)
         else:
             if len(same_name_playlists) > 1:
