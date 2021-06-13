@@ -18,3 +18,5 @@ $ yarn generate
 ```
 
 For detailed explanation on how things work, check out [Nuxt.js docs](https://nuxtjs.org).
+
+* UI done with MaterialUI via [Vuetify](https://vuetifyjs.com/en/)

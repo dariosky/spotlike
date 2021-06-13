@@ -12,6 +12,10 @@
             Events
           </router-link>
 
+          <router-link v-if="$store.state.user.id" to="/recents">
+            Recent
+          </router-link>
+
           <router-link v-if="$store.state.user.id" to="/logout">
             Logout
           </router-link>
