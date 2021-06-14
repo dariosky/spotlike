@@ -118,16 +118,6 @@ def get_app(config):
     def handle_errors(e):
         return {"error": e.name, "description": e.description}, e.code
 
-    if False:  # let's skip the catchall in the api - we serve via a frontend proxy
-        @app.get("/", defaults={"url": ""})
-        @app.get('/<path:url>')
-        def catch_all(url):
-            """ Handle the page-not-found - apply some backward-compatibility redirect """
-            ext = os.path.splitext(url)[-1]
-            if ext in SERVED_EXTENSIONS:
-                return flask.send_from_directory('ui/dist', url)
-            return flask.render_template("index.html")
-
     @login_required
     @app.get(f"{api_prefix}/events")
     def events():
