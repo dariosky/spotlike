@@ -3,14 +3,11 @@
     <div v-if="!loading">
       <v-list two-line>
         <v-list-item v-for="item in items" :key="item.id" elevation="1" tile>
-          <v-list-item-avatar>
-            <v-img
-              :src="item.track.album.picture"
-              max-height="250"
-              max-width="250"
-            ></v-img>
+          <v-list-item-avatar width="100" height="100">
+            <v-img :src="item.track.album.picture"></v-img>
           </v-list-item-avatar>
           <v-list-item-content>
+            <v-card-subtitle class="pb-3 pl-0">{{ item.date }}</v-card-subtitle>
             <v-list-item-title>{{ item.track.title }}</v-list-item-title>
             <v-list-item-subtitle>
               {{ item.track.artist ? item.track.artist.name : '' }}
