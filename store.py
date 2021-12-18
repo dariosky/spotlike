@@ -4,7 +4,7 @@ import datetime
 import peewee
 from playhouse.sqlite_ext import JSONField
 
-db = peewee.SqliteDatabase('spotlike.db')
+db = peewee.SqliteDatabase("spotlike.db")
 
 
 class BaseModel(peewee.Model):
@@ -14,16 +14,13 @@ class BaseModel(peewee.Model):
     def get_by_any_id(self, **kwargs):
         Model = self._meta.model
         if isinstance(self._pk, tuple):
-            key = {
-                k.name: kwargs[k.name]
-                for k in self._meta.get_primary_keys()
-            }
+            key = {k.name: kwargs[k.name] for k in self._meta.get_primary_keys()}
             return Model.get(**key)
         else:
             return Model.get_by_id(self._pk)
 
     def insert_or_update(self, **kwargs):
-        for field, value in kwargs.items(): \
+        for field, value in kwargs.items():
             setattr(self, field, value)
         passed_fields = {field for field in kwargs}
 
@@ -33,7 +30,10 @@ class BaseModel(peewee.Model):
                 existing = self.get_by_any_id(**kwargs)
                 changed_fields = []
                 for field in self.dirty_fields:
-                    if getattr(existing, field.name) != getattr(self, field.name) and field.name in passed_fields:
+                    if (
+                        getattr(existing, field.name) != getattr(self, field.name)
+                        and field.name in passed_fields
+                    ):
                         changed_fields.append(field)
                 if changed_fields:
                     self.save(only=changed_fields)  # change only the changed fields
@@ -53,11 +53,7 @@ class User(BaseModel):
     is_admin = peewee.BooleanField(default=False)
 
     def as_json(self):
-        return {
-            k: getattr(self, k)
-            for k in ('id', 'name',
-                      'email', 'picture')
-        }
+        return {k: getattr(self, k) for k in ("id", "name", "email", "picture")}
 
     def __str__(self):
         return f"{self.email}"
@@ -90,7 +86,7 @@ class TrackArtist(BaseModel):
     artist = peewee.ForeignKeyField(Artist)
 
     class Meta:
-        primary_key = peewee.CompositeKey('track', 'artist')
+        primary_key = peewee.CompositeKey("track", "artist")
 
 
 class AlbumArtist(BaseModel):
@@ -99,30 +95,30 @@ class AlbumArtist(BaseModel):
     artist = peewee.ForeignKeyField(Artist)
 
     class Meta:
-        primary_key = peewee.CompositeKey('album', 'artist')
+        primary_key = peewee.CompositeKey("album", "artist")
 
 
 class Play(BaseModel):
-    user = peewee.ForeignKeyField(User, backref='played')
+    user = peewee.ForeignKeyField(User, backref="played")
     track = peewee.ForeignKeyField(Track)
     date = peewee.DateTimeField()
 
     class Meta:
-        primary_key = peewee.CompositeKey('user', 'track', 'date')
+        primary_key = peewee.CompositeKey("user", "track", "date")
 
 
 class Liked(BaseModel):
     # a many to many relation table
-    user = peewee.ForeignKeyField(User, backref='liked')
+    user = peewee.ForeignKeyField(User, backref="liked")
     track = peewee.ForeignKeyField(Track)
     date = peewee.DateTimeField()
 
     class Meta:
-        primary_key = peewee.CompositeKey('user', 'track', 'date')
+        primary_key = peewee.CompositeKey("user", "track", "date")
 
 
 class Message(BaseModel):
-    user = peewee.ForeignKeyField(User, backref='messages')
+    user = peewee.ForeignKeyField(User, backref="messages")
     message = peewee.CharField()
     date = peewee.DateTimeField(default=datetime.datetime.utcnow)
     msg_type = peewee.CharField(null=True)
@@ -134,15 +130,21 @@ def closedb():
 
 def initdb():
     db.connect(reuse_if_open=True)
-    db.create_tables((User,
-                      Track,
-                      Artist, TrackArtist,
-                      Album, AlbumArtist,
-                      Play, Liked,
-                      Message,
-                      ))
+    db.create_tables(
+        (
+            User,
+            Track,
+            Artist,
+            TrackArtist,
+            Album,
+            AlbumArtist,
+            Play,
+            Liked,
+            Message,
+        )
+    )
     atexit.register(closedb)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     initdb()
