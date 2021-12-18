@@ -9,6 +9,8 @@ import peewee
 import spotipy
 
 # will get credentials and save them locally
+from spotipy import SpotifyException
+
 from store import (User, initdb, Message, Track,
                    Artist, TrackArtist, Album, Liked, Play, AlbumArtist, db)
 
@@ -21,6 +23,10 @@ scope = ",".join((
 ))
 
 logger = logging.getLogger('spotlike.spottools')
+
+
+class SpotifyConnectionException(Exception):
+    pass
 
 
 class StoredSpotifyOauth(spotipy.SpotifyOAuth):
@@ -144,7 +150,10 @@ class SpotUserActions:
                                        requests_timeout=30)
 
         if connect:
-            spotify_user = self.spotify.current_user()
+            try:
+                spotify_user = self.spotify.current_user()
+            except SpotifyException as e:
+                raise SpotifyConnectionException(e.msg)
 
             # we are initialized - let's save the user
             self.user = User(id=spotify_user['id']) \

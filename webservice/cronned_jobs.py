@@ -1,7 +1,7 @@
 import logging
 import os
 
-from spottools import SpotUserActions
+from spottools import SpotUserActions, SpotifyConnectionException
 from store import User, initdb
 from webservice.config import get_config
 
@@ -18,13 +18,16 @@ def run_all_jobs():
 
     initdb()
     for user in User.select():
-        logger.debug(f"Processing {user}")
-        act = SpotUserActions(user)
-        # act.auto_like_recurrent()
-        act.remove_liked_duplicates()
-        act.sync_liked_with_playlist(name='Liked playlist')
-        act.collect_recent()
-        act.collect_likes()
+        try:
+            logger.debug(f"Processing {user}")
+            act = SpotUserActions(user)
+            # act.auto_like_recurrent()
+            act.remove_liked_duplicates()
+            act.sync_liked_with_playlist(name='Liked playlist')
+            act.collect_recent()
+            act.collect_likes()
+        except SpotifyConnectionException as e:
+            logger.error(f"Cannot connect {user}: {e}")
 
 
 if __name__ == '__main__':
