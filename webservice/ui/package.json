@@ -1,5 +1,6 @@
 {
   "name": "spotlike",
+  "description": "Automated tasks for your Spotify playlists",
   "version": "1.0.0",
   "private": true,
   "scripts": {

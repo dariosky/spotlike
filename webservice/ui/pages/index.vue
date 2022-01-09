@@ -28,6 +28,8 @@
       <li>
         Looks for duplicates in your liked songs, and only keeps the oldest.
       </li>
+
+      <li>Keep track of what you listen to suggest you what you may like.</li>
     </ul>
   </div>
 </template>

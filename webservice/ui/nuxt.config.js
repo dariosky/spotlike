@@ -28,7 +28,7 @@ export default {
         content: process.env.npm_package_description || '',
       },
     ],
-    link: [{ rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }],
+    link: [{ rel: 'icon', type: 'image/x-icon', href: '~/assets' }],
   },
   /*
    ** Global CSS
@@ -49,7 +49,12 @@ export default {
    */
   buildModules: [
     // Doc: https://github.com/nuxt-community/eslint-module
-    '@nuxtjs/eslint-module',
+    [
+      '@nuxtjs/eslint-module',
+      {
+        fix: true,
+      },
+    ],
     '@nuxtjs/vuetify',
   ],
   /*
