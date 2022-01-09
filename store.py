@@ -55,6 +55,19 @@ class User(BaseModel):
     def as_json(self):
         return {k: getattr(self, k) for k in ("id", "name", "email", "picture")}
 
+    def can_be_seen_by(self, u):
+        if u.is_admin:
+            return True
+        try:
+            self.friends.where(
+                Friendship.star == u,
+                Friendship.fan == self,
+                Friendship.pending is False,
+            ).get()
+            return True
+        except Friendship.DoesNotExist:
+            return False
+
     def __str__(self):
         return f"{self.email}"
 
@@ -81,7 +94,7 @@ class Track(BaseModel):
 
 
 class TrackArtist(BaseModel):
-    # a many to many relation table
+    # a many-to-many relation table
     track = peewee.ForeignKeyField(Track)
     artist = peewee.ForeignKeyField(Artist)
 
@@ -90,7 +103,7 @@ class TrackArtist(BaseModel):
 
 
 class AlbumArtist(BaseModel):
-    # a many to many relation table
+    # a many-to-many relation table
     album = peewee.ForeignKeyField(Album)
     artist = peewee.ForeignKeyField(Artist)
 
@@ -108,7 +121,7 @@ class Play(BaseModel):
 
 
 class Liked(BaseModel):
-    # a many to many relation table
+    # a many-to-many relation table
     user = peewee.ForeignKeyField(User, backref="liked")
     track = peewee.ForeignKeyField(Track)
     date = peewee.DateTimeField()
@@ -122,6 +135,20 @@ class Message(BaseModel):
     message = peewee.CharField()
     date = peewee.DateTimeField(default=datetime.datetime.utcnow)
     msg_type = peewee.CharField(null=True)
+
+
+class Friendship(BaseModel):
+    """The friendship model is like:
+    I can see just a limited profile of you
+    I ask you for friendship (I become a fan)
+    When you grant me the friendship - it's mutial - we both see eachother info
+    """
+
+    fan = peewee.ForeignKeyField(User)  # the one asking for the request
+    star = peewee.ForeignKeyField(
+        User, backref="friends"
+    )  # the one receiving the request
+    pending = peewee.BooleanField(default=True)
 
 
 def closedb():
@@ -141,6 +168,7 @@ def initdb():
             Play,
             Liked,
             Message,
+            Friendship,
         )
     )
     atexit.register(closedb)

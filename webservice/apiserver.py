@@ -4,6 +4,7 @@ import traceback
 import flask
 import requests
 from flask_cors import CORS
+from peewee import DoesNotExist
 from spotipy import SpotifyOauthError
 from werkzeug.exceptions import NotFound
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -157,11 +158,35 @@ def get_app(config):
 
         return {"items": recents_page}
 
+    @login_required
+    @app.get(f"{api_prefix}/profile/<string:email>")
+    def profile(email):
+        try:
+            star: User = User.get(User.email == email)
+        except DoesNotExist:
+            return dict(message=f"User '{email}' not found"), 404
+        fan = current_user()
+        profile = dict(
+            id=star.id,
+            name=star.name,
+            picture=star.picture,
+            join_date=star.join_date,
+        )
+
+        if fan == star:
+            is_friend = True
+            profile["self"] = True
+        else:
+            is_friend = star.can_be_seen_by(fan)
+        if is_friend:
+            profile.update(dict(email=star.email))
+        return {"profile": profile}
+
     @app.get(f"{api_prefix}/")
     def root():
         return flask.render_template("index.html")
 
-    @app.errorhandler(Exception)
+    @app.errorhandler(500)
     def handle_500(e):
         if not isinstance(e, NotFound):
             error_tb = traceback.format_exc()
@@ -169,7 +194,7 @@ def get_app(config):
                 f"Error or {flask.request.path} - user {current_user()}: {e}\n"
                 f"```{error_tb}```"
             )
-        return app.finalize_request(e, from_error_handler=True)
+        return e, 500
 
     return app
 
