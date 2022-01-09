@@ -1,5 +1,7 @@
+import functools
 import os
 import traceback
+from typing import Optional
 
 import flask
 import requests
@@ -10,7 +12,7 @@ from werkzeug.exceptions import NotFound
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from spottools import SpotUserActions, get_auth_manager, get_recent
-from store import User, Message
+from store import User, Message, Friendship
 from webservice.config import get_config, activate_config
 
 try:
@@ -57,20 +59,21 @@ def get_app(config):
     def login_required(func):
         """Wrapper to ensure user is logged"""
 
+        @functools.wraps(func)
         def wrapper(*args, **kwargs):
             if not current_user():
                 return dict(error="Not logged in"), 401
-            func(*args, **kwargs)
+            return func(*args, **kwargs)
 
         return wrapper
 
-    def current_user():
+    def current_user() -> Optional[User]:
         uid = flask.session.get("uid")
         if uid:
             return User.get_by_id(uid)
 
-    @login_required
     @app.post(f"{api_prefix}/logout")
+    @login_required
     def logout():
         del flask.session["uid"]
         return dict(status="ok")
@@ -128,10 +131,16 @@ def get_app(config):
     @app.errorhandler(400)
     @app.errorhandler(500)
     def handle_errors(e):
+        if not isinstance(e, NotFound):
+            error_tb = traceback.format_exc()
+            log_error(
+                f"Error or {flask.request.path} - user {current_user()}: {e}\n"
+                f"```{error_tb}```"
+            )
         return {"error": e.name, "description": e.description}, e.code
 
-    @login_required
     @app.get(f"{api_prefix}/events")
+    @login_required
     def events():
         page = flask.request.args.get("page", 1)
         items = flask.request.args.get("items", 30)
@@ -148,8 +157,8 @@ def get_app(config):
             ]
         }
 
-    @login_required
     @app.get(f"{api_prefix}/recents")
+    @login_required
     def recents():
         page = flask.request.args.get("page", 1)
         items = flask.request.args.get("items", 30)
@@ -158,8 +167,8 @@ def get_app(config):
 
         return {"items": recents_page}
 
-    @login_required
     @app.get(f"{api_prefix}/profile/<string:email>")
+    @login_required
     def profile(email):
         try:
             star: User = User.get(User.email == email)
@@ -182,19 +191,16 @@ def get_app(config):
             profile.update(dict(email=star.email))
         return {"profile": profile}
 
+    @app.get(f"{api_prefix}/friends")
+    @login_required
+    def friends():
+        available_friends = current_user().friends.where()
+
+        return {"friends": list(available_friends)}
+
     @app.get(f"{api_prefix}/")
     def root():
         return flask.render_template("index.html")
-
-    @app.errorhandler(500)
-    def handle_500(e):
-        if not isinstance(e, NotFound):
-            error_tb = traceback.format_exc()
-            log_error(
-                f"Error or {flask.request.path} - user {current_user()}: {e}\n"
-                f"```{error_tb}```"
-            )
-        return e, 500
 
     return app
 
