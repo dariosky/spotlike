@@ -13,7 +13,7 @@ export default {
     },
   },
   head: {
-    title: 'Automated tasks for your Spotify playlists',
+    title: 'Home',
   },
 }
 </script>

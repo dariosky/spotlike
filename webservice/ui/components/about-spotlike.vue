@@ -1,18 +1,18 @@
 <template>
   <div>
-    <p>
+    <section>
       Connect your Spotify account to add several smart features around your
       listening habits and automate some of the boring tasks.
-    </p>
+    </section>
 
-    <div v-if="$store.state.user.authUrl">
+    <section v-if="$store.state.user.authUrl">
       <a :href="$store.state.user.authUrl" class="button action">
         <img id="spotify-logo" src="@/assets/spotify.svg" alt="" />
         Log in with Spotify
       </a>
-    </div>
+    </section>
 
-    <div>
+    <section>
       <h2>Here is what it does</h2>
       <ul>
         <li>
@@ -28,7 +28,14 @@
           Keeps track of what you listen and suggests you what you may like.
         </li>
       </ul>
-    </div>
+    </section>
+
+    <section>
+      Hey, it's opensource - do you want to contribute? It's in Github:
+      <a href="https://github.com/dariosky/spotlike" target="_blank"
+        >https://github.com/dariosky/spotlike
+      </a>
+    </section>
   </div>
 </template>
 
@@ -39,6 +46,10 @@ export default {
 </script>
 
 <style scoped>
+section {
+  margin: 10px;
+}
+
 #spotify-logo {
   margin-right: 10px;
   width: 32px;

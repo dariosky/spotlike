@@ -56,5 +56,6 @@ export default {
     if (!this.$store.state.user.id)
       setTimeout(() => this.$router.push('/'), 3000)
   },
+  head: { title: 'Listen recently' },
 }
 </script>
