@@ -5,21 +5,7 @@
         <router-link to="/">
           <img id="logo" alt="Spotlike" src="@/assets/spotlike.svg" />
         </router-link>
-        <div id="nav">
-          <router-link to="/">Home</router-link>
-
-          <router-link v-if="$store.state.user.id" to="/events">
-            Events
-          </router-link>
-
-          <router-link v-if="$store.state.user.id" to="/recents">
-            Recent
-          </router-link>
-
-          <router-link v-if="$store.state.user.id" to="/logout">
-            Logout
-          </router-link>
-        </div>
+        <navbar />
       </v-container>
 
       <v-container class="view">
@@ -32,20 +18,6 @@
 </template>
 
 <style>
-#nav {
-  padding: 30px;
-}
-
-#nav a {
-  font-weight: bold;
-  color: #2c3e50;
-  margin: 0 10px;
-}
-
-#nav a.nuxt-link-exact-active {
-  color: #42b983;
-}
-
 .logobox {
   text-align: center;
 }

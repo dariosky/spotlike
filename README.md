@@ -14,7 +14,7 @@ Trust me - it's going to be awesome
 At the moment this is a CLI interface, it will launch a bot that does
 magic with your Spotify account.
 
-If you install it via pip - you'll get a `spotlite` command.
+If you install it via pip - you'll get a `spotlike` command.
 
 #### Sync your likes to a playlist
 The first feature: creating a playlist with all

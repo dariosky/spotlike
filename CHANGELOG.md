@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.0.1 - still a CLI sprout
+## v0.0.1 - still a CLI sprout - 20 Aug 2020
 
 ### Added
 
