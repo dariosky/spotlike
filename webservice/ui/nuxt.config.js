@@ -17,7 +17,10 @@ export default {
    ** See https://nuxtjs.org/api/configuration-head
    */
   head: {
-    titleTemplate: '%s - Spotlike',
+    titleTemplate: (titleChunk) => {
+      // If undefined or blank then we don't need the hyphen
+      return titleChunk ? `${titleChunk} - Spotlike` : 'Spotlike'
+    },
     title: process.env.npm_package_name || '',
     meta: [
       { charset: 'utf-8' },
@@ -26,6 +29,11 @@ export default {
         hid: 'description',
         name: 'description',
         content: process.env.npm_package_description || '',
+      },
+      {
+        hid: 'og:image',
+        property: 'og:image',
+        content: '/icon.png',
       },
     ],
     link: [{ rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }],
