@@ -12,6 +12,9 @@
     "lint": "yarn lint:js",
     "test": "jest"
   },
+  "engines" : {
+    "node" : ">=16.0.0 <17.0.0"
+  },
   "dependencies": {
     "@nuxtjs/axios": "^5.12.0",
     "@nuxtjs/pwa": "^3.0.0-beta.20",
