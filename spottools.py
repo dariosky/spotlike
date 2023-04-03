@@ -1,9 +1,9 @@
 import datetime
 import json
 import logging
-from collections import defaultdict
+from collections import defaultdict, deque
 from functools import partial
-from typing import Dict, List, Set
+from typing import Dict, Set
 
 import click
 import peewee
@@ -198,10 +198,21 @@ class SpotUserActions:
 
     def get_spotify_list(self, results):
         """A generic method to consume the Spotify API paginated results"""
+        seen_next = deque(maxlen=10)
         while True:
+            logger.debug(
+                f"Got {results['offset']+len(results['items'])}/{results['total']} items"
+            )
             for item in results["items"]:
                 yield item
-            if results["next"]:
+            next_page = results["next"]
+            if next_page:
+                if next_page in seen_next:
+                    all_but_items = {k: v for k, v in results.items() if k != "items"}
+                    raise RuntimeError(
+                        f"Something is wrong - I got {next_page} that I already saw recently: {all_but_items}"
+                    )
+                seen_next.append(next_page)
                 results = self.spotify.next(results)
             else:
                 break
@@ -275,6 +286,7 @@ class SpotUserActions:
                 )
 
     def cached_likes(self):
+        # TODO: This is enormous
         likes = list(self.liked_songs())
         self.cached_likes = lambda: likes  # replace the property
         return likes
