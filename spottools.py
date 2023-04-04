@@ -201,7 +201,7 @@ class SpotUserActions:
         seen_next = deque(maxlen=10)
         while True:
             logger.debug(
-                f"Got {results['offset']+len(results['items'])}/{results['total']} items"
+                f"Got {results.get('offset',0)+len(results['items'])}/{results.get('total','unknown')} items"
             )
             for item in results["items"]:
                 yield item
