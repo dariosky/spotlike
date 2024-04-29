@@ -78,8 +78,8 @@ class TestMergeFast(TestMergeFull):
 
 class TestChunkSplitting:
     def test_chunk_inverted(self):
-        l = [1, 2, 3, 4, 5, 6, 7, 8]
-        chunks = list(reverse_block_chunks(l, 3))
+        haystack = [1, 2, 3, 4, 5, 6, 7, 8]
+        chunks = haystack(reverse_block_chunks(haystack, 3))
         assert chunks == [
             [6, 7, 8],
             [3, 4, 5],
@@ -87,6 +87,6 @@ class TestChunkSplitting:
         ]
 
     def test_empty(self):
-        l = []
-        chunks = list(reverse_block_chunks(l, 3))
+        haystack = []
+        chunks = list(reverse_block_chunks(haystack, 3))
         assert chunks == []

@@ -23,14 +23,14 @@ def sync(name, fast):
 @cli.command()
 def remove_duplicates():
     """Look for duplicate-likes - keep the oldest"""
-    click.echo(f"Looking for duplicates in your liked songs")
+    click.echo("Looking for duplicates in your liked songs")
     act = SpotUserActions()
     act.remove_liked_duplicates()
 
 
 @cli.command()
 def auto_like_recurrent():
-    click.echo(f"Looking for recurrent songs to like")
+    click.echo("Looking for recurrent songs to like")
     act = SpotUserActions()
     act.auto_like_recurrent()
 
@@ -40,6 +40,6 @@ if __name__ == "__main__":
         level=logging.INFO, format="%(asctime)s - %(levelname)s: %(message)s"
     )
     logging.getLogger("spotlike").setLevel(logging.DEBUG)
-    # sync()
+    cli()
     # remove_duplicates()
-    auto_like_recurrent()
+    # auto_like_recurrent()

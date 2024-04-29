@@ -242,12 +242,22 @@ class SpotUserActions:
                 public=False,
             )
         else:
+            playlist = same_name_playlists[0]  # getting the first
             if len(same_name_playlists) > 1:
                 click.echo(
-                    f"Warning: We have multiple playlist with the name {name}",
+                    f"Warning: We have {len(same_name_playlists)} playlists with the name {name}",
                     color="green",
                 )
-            playlist = same_name_playlists[0]  # getting the first
+                click.echo(
+                    "Removing the others",
+                    color="yellow",
+                )
+                for duplicated_playlist in same_name_playlists[1:]:
+                    logger.debug(f"Removing duplicated {duplicated_playlist['id']}")
+                    self.spotify.current_user_unfollow_playlist(
+                        duplicated_playlist["id"]
+                    )
+
         return playlist
 
     def sync_liked_with_playlist(self, name, full=True):
@@ -398,10 +408,10 @@ class SpotUserActions:
             for liked in self.cached_likes():
                 track = store_track(liked["track"])
                 try:
-                    l = Liked(
+                    like = Liked(
                         track=track, user=self.user, date=parse_date(liked["added_at"])
                     )
-                    l.save(force_insert=True)
+                    like.save(force_insert=True)
                     added += 1
                 except peewee.IntegrityError:
                     break
@@ -427,12 +437,12 @@ class SpotUserActions:
             logger.debug(f"Added {added} recent")
 
 
-def reverse_block_chunks(l, size):
+def reverse_block_chunks(haystack: list, size):
     """iterate through the list with a given size so the blocks keep their inner order,
     but we get them from the latest"""
-    start, end = len(l) - size, len(l)
+    start, end = len(haystack) - size, len(haystack)
     while end > 0:
-        yield l[start:end]
+        yield haystack[start:end]
         start, end = max(0, start - size), start
 
 
