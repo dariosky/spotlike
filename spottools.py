@@ -242,17 +242,18 @@ class SpotUserActions:
                 public=False,
             )
         else:
-            playlist = same_name_playlists[0]  # getting the first
+            playlist = same_name_playlists[-1]  # getting the last
             if len(same_name_playlists) > 1:
                 click.echo(
-                    f"Warning: We have {len(same_name_playlists)} playlists with the name {name}",
+                    f"Warning: We have {len(same_name_playlists)}"
+                    f" playlists with the name {name}",
                     color="green",
                 )
                 click.echo(
                     "Removing the others",
                     color="yellow",
                 )
-                for duplicated_playlist in same_name_playlists[1:]:
+                for duplicated_playlist in same_name_playlists[:-1]:
                     logger.debug(f"Removing duplicated {duplicated_playlist['id']}")
                     self.spotify.current_user_unfollow_playlist(
                         duplicated_playlist["id"]
