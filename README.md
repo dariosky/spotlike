@@ -11,6 +11,18 @@ Trust me - it's going to be awesome
 
 ----
 
+### Use the hosted one for free
+You can just sign-up here for free and enjoy its benefits.
+It's free and it will always be the latest stable version.
+
+https://spotlike.dariosky.it/
+
+You can always run it on your box, but if  I host it for you,
+you don't have to create a SpotifyApp and keep your computer
+on checking your account to do its magic
+
+### Run the backend locally
+
 At the moment this is a CLI interface, it will launch a bot that does
 magic with your Spotify account.
 
@@ -53,20 +65,15 @@ spotlike remove-duplicates
 ```
 
 
-### Roadmap
+## Roadmap
 
 If you find yourself doing repetitive chores in Spotify, or you have an
-idea that will save the humanity tons of hour so we can all move to a beach
+idea that will save the humanity tons of hours so we can all move to a beach
 sipping Mojitos, write me [in the suggestion box](mailto://dariosky+spotlike@gmail.com?subject=I have this great idea for Spotlike)!
 
 Here a few things I'll be working on (in this order):
 
 * Automatically like (or add to a playlist) the songs you're listening-to the most
-* Multi-user support - ATM it links with a Spotify account, and it will be
-  bonded to it for the rest of it's life
-* Add a web-interface to this bot: you can always run it on your box, but if
-  I host it for you, you don't have to create a SpotifyApp and keep your computer
-  on checking your account to do its magic
 * Create a Telegram bot and ask for user account - to get notified whenever a song is added
   to one of your collaborative playlists
 * More social features? What about a thread of comments with your friends around a track you
@@ -74,4 +81,8 @@ Here a few things I'll be working on (in this order):
   
  ##### Done (see the [changelog](CHANGELOG.md))
 
-* ~~Warn whenever you like two songs with the same name and duration (to me it happens often I like a song in the original album, and again in a collection)~~
+* Warn whenever you like two songs with the same name and duration
+  (it happens often to me: I like a song in the original album, and again in a collection)
+* Multi-user support - the webserver joins various users sequentially 
+* Add a web-interface to this bot
+
