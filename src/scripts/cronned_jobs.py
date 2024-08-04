@@ -1,8 +1,8 @@
 import logging
 import os
 
-from spottools import SpotUserActions, SpotifyConnectionException
-from store import User, initdb
+from src.spottools import SpotUserActions, SpotifyConnectionException
+from src.store import User, initdb
 from webservice.config import get_config
 
 logger = logging.getLogger("spotlike.cron")

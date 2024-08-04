@@ -11,8 +11,8 @@ from spotipy import SpotifyOauthError
 from werkzeug.exceptions import NotFound
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-from spottools import SpotUserActions, get_auth_manager, get_recent
-from store import User, Message, Friendship
+from src.spottools import SpotUserActions, get_auth_manager, get_recent
+from src.store import User, Message
 from webservice.config import get_config, activate_config
 
 try:

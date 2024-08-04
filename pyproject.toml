@@ -1,0 +1,6 @@
+[tool.poetry]
+name = "spotlike"
+version = "2.0.0"
+description = "Giving some 🫶 to Spotify"
+authors = ["Dario Varotto <dariosky+spotlike@gmail.com>"]
+readme = "README.md"

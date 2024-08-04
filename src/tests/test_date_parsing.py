@@ -1,6 +1,6 @@
 import datetime
 
-from spottools import parse_date
+from src.spottools import parse_date
 
 
 class TestDateParsing:
