@@ -14,7 +14,7 @@ def cli():
 @click.option("--name", help="Liked playlist name", default="Liked playlist")
 @click.option("--fast", help="Perform a fast sync", default=False, is_flag=True)
 def sync(name, fast):
-    """Syncronize all your liked songs with a playlist"""
+    """Synchronise all your liked songs with a playlist"""
     click.echo(f"Syncing the liked songs with '{name}'")
     act = SpotUserActions()
     act.sync_liked_with_playlist(name, full=not fast)

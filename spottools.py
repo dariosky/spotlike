@@ -1,6 +1,7 @@
 import datetime
 import json
 import logging
+import time
 from collections import defaultdict, deque
 from functools import partial
 from typing import Dict, Set
@@ -60,7 +61,7 @@ class StoredSpotifyOauth(spotipy.SpotifyOAuth):
         token_info = self.user.tokens  # get from DB
         # if scopes don't match, then bail
         if "scope" not in token_info or not self._is_scope_subset(
-            self.scope, token_info["scope"]
+                self.scope, token_info["scope"]
         ):
             return None
 
@@ -156,11 +157,11 @@ def store_track(track):
 
 class SpotUserActions:
     def __init__(
-        self,
-        user=None,
-        auth_manager=None,
-        connect=True,
-        redirect_uri="http://localhost:3000",
+            self,
+            user=None,
+            auth_manager=None,
+            connect=True,
+            redirect_uri="http://localhost:3000",
     ):
         initdb()
         # we use a custom client_credentials_manager that writes in the DB
@@ -201,7 +202,7 @@ class SpotUserActions:
         seen_next = deque(maxlen=10)
         while True:
             logger.debug(
-                f"Got {results.get('offset',0)+len(results['items'])}/{results.get('total','unknown')} items"
+                f"Got {results.get('offset', 0) + len(results['items'])}/{results.get('total', 'unknown')} items"
             )
             for item in results["items"]:
                 yield item
@@ -213,7 +214,16 @@ class SpotUserActions:
                         f"Something is wrong - I got {next_page} that I already saw recently: {all_but_items}"
                     )
                 seen_next.append(next_page)
-                results = self.spotify.next(results)
+                attempts = 10
+                while attempts:
+                    try:
+                        results = self.spotify.next(results)
+                        break
+                    except spotipy.exceptions.SpotifyException as e:
+                        logger.error(
+                            f"Got an error {e} - waiting and retrying other {attempts} times")
+                        time.sleep(5)
+                        attempts -= 1
             else:
                 break
 
@@ -225,7 +235,7 @@ class SpotUserActions:
     def filter_own_playlists(self, playlists):
         for playlist in playlists:
             if (
-                playlist["owner"]["id"] == self.user.id
+                    playlist["owner"]["id"] == self.user.id
             ):  # get only the one owned by the user
                 yield playlist
 
@@ -286,8 +296,8 @@ class SpotUserActions:
 
         # we add and remove all the needed tracks
         for all_tracks, method in (
-            (to_add, partial(self.spotify.playlist_add_items, position=0)),
-            (to_del, self.spotify.playlist_remove_all_occurrences_of_items),
+                (to_add, partial(self.spotify.playlist_add_items, position=0)),
+                (to_del, self.spotify.playlist_remove_all_occurrences_of_items),
         ):
             # we do our operations in chunks of 100 tracks
             for tracks in reverse_block_chunks(all_tracks, 100):
@@ -351,7 +361,7 @@ class SpotUserActions:
 
     def recently_played(self, after=None):
         for played in self.get_spotify_list(
-            self.spotify.current_user_recently_played()
+                self.spotify.current_user_recently_played()
         ):
             yield played
 
@@ -474,19 +484,19 @@ def sync_merge_fast(likes, playlist_tracks):
     while True:
         # let's add songs until we find something already synced or we find something sinced before the current like
         if (
-            liked
-            and in_playlist
-            and (
+                liked
+                and in_playlist
+                and (
                 liked["track"]["id"] != in_playlist["track"]["id"]
                 and in_playlist["added_at"] <= liked["added_at"]
-            )
+        )
         ):
             to_add.append(liked["track"]["id"])
             liked = next(likes, None)
             continue
 
         if liked and (
-            not in_playlist or liked["track"]["id"] != in_playlist["track"]["id"]
+                not in_playlist or liked["track"]["id"] != in_playlist["track"]["id"]
         ):
             # if what we have
             logger.info(f"Adding the non-liked {liked['track']['name']}")
@@ -508,7 +518,7 @@ def sync_merge(likes, playlist_tracks, full=True):
 
 def get_recent_query(user):
     artist_join_predicate = (TrackArtist.artist == Artist.id) | (
-        (~TrackArtist.artist) & (AlbumArtist.artist == Artist.id)
+            (~TrackArtist.artist) & (AlbumArtist.artist == Artist.id)
     )
 
     def str_to_list(concat_str):
