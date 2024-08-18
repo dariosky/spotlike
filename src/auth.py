@@ -17,3 +17,11 @@ def current_user(
     if user is None:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
     return user
+
+
+def logged_user(user: User = Depends(current_user)) -> User:
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="You were not logged in"
+        )
+    return user

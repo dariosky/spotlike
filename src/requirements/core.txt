@@ -1,6 +1,0 @@
-spotipy==2.24.0
-fastapi[standard]==0.112.0
-brotli-asgi==1.4.0
-sqlmodel==0.0.21
-alembic==1.13.2
-itsdangerous==2.2.0

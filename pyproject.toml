@@ -1,6 +1,25 @@
-[tool.poetry]
+[project]
 name = "spotlike"
 version = "2.0.0"
 description = "Giving some 🫶 to Spotify"
-authors = ["Dario Varotto <dariosky+spotlike@gmail.com>"]
+authors = [
+  {name = "Dario Varotto", email = "dariosky+spotlike@gmail.com"},
+]
 readme = "README.md"
+requires-python = ">= 3.11"
+
+dependencies = [
+  "fastapi[standard]",
+  "sqlmodel",
+  "spotipy",
+  "brotli-asgi",
+  "itsdangerous",
+  "alembic",
+  "pyhumps"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest",
+  "ruff"
+]
