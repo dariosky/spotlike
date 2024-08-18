@@ -15,11 +15,13 @@ dependencies = [
   "brotli-asgi",
   "itsdangerous",
   "alembic",
-  "pyhumps"
+  "pyhumps",
+  "nicegui"
 ]
 
 [project.optional-dependencies]
 dev = [
   "pytest",
-  "ruff"
+  "ruff",
+  "pytest-mock"
 ]

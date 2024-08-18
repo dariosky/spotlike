@@ -6,7 +6,7 @@ from spotipy import SpotifyOauthError
 from auth import logged_user
 from config import settings
 from db.auth import User
-from spottools import get_auth_manager, SpotUserActions
+from multispot import get_auth_manager, SpotUserActions
 
 router = APIRouter()
 

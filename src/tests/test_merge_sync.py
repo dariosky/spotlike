@@ -1,4 +1,4 @@
-from src.spottools import sync_merge, reverse_block_chunks
+from tools.spot import sync_merge, reverse_block_chunks
 
 
 def song(added_at, track_id):
@@ -79,7 +79,7 @@ class TestMergeFast(TestMergeFull):
 class TestChunkSplitting:
     def test_chunk_inverted(self):
         haystack = [1, 2, 3, 4, 5, 6, 7, 8]
-        chunks = haystack(reverse_block_chunks(haystack, 3))
+        chunks = list(reverse_block_chunks(haystack, 3))
         assert chunks == [
             [6, 7, 8],
             [3, 4, 5],

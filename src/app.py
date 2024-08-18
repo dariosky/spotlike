@@ -11,10 +11,10 @@ from config import settings
 
 def make_app():
     os.chdir(settings.project_root)
-    secret = os.environ["SESSION_SECRET_KEY"]
+
     middlewares = [
         Middleware(BrotliMiddleware, minimum_size=1000),
-        Middleware(SessionMiddleware, secret_key=secret),
+        Middleware(SessionMiddleware, secret_key=settings.session_secret),
     ]
 
     app = FastAPI(
@@ -29,8 +29,8 @@ def make_app():
 
     app.include_router(
         auth.router,
-        tags=["import"],
-        prefix="/import",
+        tags=["auth"],
+        prefix="/auth",
     )
 
     return app

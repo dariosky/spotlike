@@ -1,46 +1,23 @@
-import datetime
-import json
 import logging
 from collections import defaultdict, deque
 from functools import partial
-from typing import Dict, Set
-
-import click
-import peewee
 import spotipy
-from peewee import JOIN
-
-# will get credentials and save them locally
 from spotipy import SpotifyException
-
-from store import (
-    User,
-    initdb,
-    Message,
-    Track,
-    Artist,
-    TrackArtist,
-    Album,
-    Liked,
-    Play,
-    AlbumArtist,
-    db,
-)
 
 scope = ",".join(
     (
-        "user-read-email",
-        "user-library-read",
-        "user-library-modify",
-        "playlist-read-private",
-        "playlist-modify-public",
         "playlist-modify-private",
+        "playlist-modify-public",
+        "playlist-read-private",
+        "user-library-modify",
+        "user-library-read",
+        "user-read-email",
         "user-read-recently-played",
         "user-top-read",
     )
 )
 
-logger = logging.getLogger("spotlike.spottools")
+logger = logging.getLogger("spotlike.multispot")
 
 
 class SpotifyConnectionException(Exception):
@@ -84,74 +61,6 @@ def get_auth_manager(user=None, redirect_uri="http://localhost:3000"):
         redirect_uri=redirect_uri,
         # show_dialog=True,
     )
-
-
-ALLOWED_DATETIME_FORMATS = (
-    "%Y-%m-%d %H:%M:%S.%f",
-    "%Y-%m-%d %H:%M:%S",
-    "%Y-%m-%dT%H:%M:%SZ",
-    "%Y-%m-%dT%H:%M:%S.%fZ",
-    "%Y-%m-%d",
-    "%Y-%m-%d %H:%M",
-    "%Y-%m",
-)
-
-
-def parse_date(date_str):
-    if isinstance(date_str, str):
-        if len(date_str) == 4:
-            date_str += "-01-01"  # %Y, let's add Jan01
-        elif len(date_str) == 7:
-            date_str += "-01"  # %Y-%M, let's add the day to be able to parse
-        date_str = date_str.strip()
-        for date_fmt in ALLOWED_DATETIME_FORMATS:
-            try:
-                return datetime.datetime.strptime(date_str, date_fmt)
-            except ValueError:
-                pass
-        raise ValueError(
-            f"Invalid date: '{date_str}', please pass a datetime or a string format"
-        )
-    return date_str
-
-
-def store_track(track):
-    artists = []
-    for artist in track.get("artists", []):
-        a = Artist().insert_or_update(
-            id=artist["id"],
-            name=artist["name"],
-        )
-        artists.append(a)
-
-    if track.get("album"):
-        album = Album().insert_or_update(
-            id=track["album"]["id"],
-            name=track["album"]["name"],
-            release_date=parse_date(track["album"]["release_date"]),
-            release_date_precision=track["album"]["release_date_precision"],
-            picture=track["album"]["images"][0]["url"]
-            if track["album"]["images"]
-            else None,
-        )
-        for artist in track["album"].get("artists", []):
-            a = Artist().insert_or_update(
-                id=artist["id"],
-                name=artist["name"],
-            )
-            AlbumArtist().insert_or_update(album=album, artist=a)
-    else:
-        album = None
-
-    t = Track().insert_or_update(
-        id=track["id"],
-        duration=track["duration_ms"],
-        title=track["name"],
-        album=album,
-    )
-    for a in artists:
-        TrackArtist().insert_or_update(track=t, artist=a)
-    return t
 
 
 class SpotUserActions:
@@ -436,159 +345,3 @@ class SpotUserActions:
                     break
         if added:
             logger.debug(f"Added {added} recent")
-
-
-def reverse_block_chunks(haystack: list, size):
-    """iterate through the list with a given size so the blocks keep their inner order,
-    but we get them from the latest"""
-    start, end = len(haystack) - size, len(haystack)
-    while end > 0:
-        yield haystack[start:end]
-        start, end = max(0, start - size), start
-
-
-def sync_merge_full(likes, playlist_tracks):
-    """A full-sync, iterating all likes and all the playlist_tracks
-    There's no way around to avoid a full-iteration sync from now and then
-    Because it's possible to unlike old songs - and that leaves no traces
-    """
-    likes_ids = [t["track"]["id"] for t in likes]  # here we care about the order
-    playlist_ids = set(
-        [t["track"]["id"] for t in playlist_tracks]
-    )  # we don't care about the order
-
-    to_add = [t for t in likes_ids if t not in playlist_ids]
-    to_del = list(playlist_ids - set(likes_ids))
-    return to_add, to_del
-
-
-def sync_merge_fast(likes, playlist_tracks):
-    """A fast-sync - that copies every new likes in the playlist"""
-    to_add = []
-    to_del = []
-
-    in_playlist = next(playlist_tracks, None)
-    liked = next(likes, None)
-
-    # so let's do merge-magic
-    while True:
-        # let's add songs until we find something already synced or we find something sinced before the current like
-        if (
-            liked
-            and in_playlist
-            and (
-                liked["track"]["id"] != in_playlist["track"]["id"]
-                and in_playlist["added_at"] <= liked["added_at"]
-            )
-        ):
-            to_add.append(liked["track"]["id"])
-            liked = next(likes, None)
-            continue
-
-        if liked and (
-            not in_playlist or liked["track"]["id"] != in_playlist["track"]["id"]
-        ):
-            # if what we have
-            logger.info(f"Adding the non-liked {liked['track']['name']}")
-            to_add.append(liked["track"]["id"])
-            liked = next(likes, None)
-            continue
-        break
-
-    return to_add, to_del
-
-
-def sync_merge(likes, playlist_tracks, full=True):
-    # ... and in the end that's what we want to know
-    if full:
-        return sync_merge_full(likes, playlist_tracks)
-    else:
-        return sync_merge_fast(likes, playlist_tracks)
-
-
-def get_recent_query(user):
-    artist_join_predicate = (TrackArtist.artist == Artist.id) | (
-        (~TrackArtist.artist) & (AlbumArtist.artist == Artist.id)
-    )
-
-    def str_to_list(concat_str):
-        return concat_str.split(",")
-
-    artist_ids = peewee.fn.GROUP_CONCAT(Artist.id).python_value(str_to_list)
-    artist_names = peewee.fn.GROUP_CONCAT(Artist.name).python_value(str_to_list)
-
-    return (
-        user.played.select(
-            Play.date,
-            Track,
-            artist_ids.alias("artist_ids"),
-            artist_names.alias("artist_names"),
-        )
-        .join(Track)
-        .join(Album, JOIN.LEFT_OUTER)
-        .join_from(Track, TrackArtist, JOIN.LEFT_OUTER)
-        .join_from(Album, AlbumArtist, JOIN.LEFT_OUTER)
-        .join_from(Track, Artist, JOIN.LEFT_OUTER, on=artist_join_predicate)
-        .group_by(Play.date, Track)
-    )
-
-
-def get_track_artists(track_query):
-    track_artists: Dict[str, Set[str]] = defaultdict(set)
-    artists: Dict[str, Dict] = {}
-    all_artists_query = track_query
-    for record in all_artists_query:
-        track_artists[record.track_id].add(record.artist.id)
-        if record.artist.id not in artists:
-            artists[record.artist.id] = dict(
-                id=record.artist.id,
-                name=record.artist.name,
-            )
-
-
-def get_recent(user, page=1, page_size=10):
-    query = (
-        get_recent_query(user)
-        .order_by(Play.date.desc(), Play.track)
-        .paginate(page, page_size)
-    )
-    print(query)
-
-    def get_picture(recent):
-        album_picture = recent.track.album.picture
-        if not album_picture:
-            return
-        try:
-            album_picture_object = json.loads(album_picture)
-            return album_picture_object["url"]
-        except ValueError:
-            return album_picture
-
-    results = []
-
-    for recent in query:
-        recent_id = f'{recent.track.id}-{recent.date.strftime("%Y-%m-%d %H:%M")}'
-        artists = {
-            artist_id: artist_name
-            for artist_id, artist_name in zip(recent.artist_ids, recent.artist_names)
-        }
-        results.append(
-            dict(
-                id=recent_id,
-                track=dict(
-                    id=recent.track.id,
-                    title=recent.track.title,
-                    album=dict(
-                        id=recent.track.album.id,
-                        name=recent.track.album.name,
-                        picture=get_picture(recent),
-                    ),
-                    artists=[
-                        dict(id=artist_id, name=artist_name)
-                        for artist_id, artist_name in artists.items()
-                    ],
-                ),
-                date=recent.date,
-            )
-        )
-    return results

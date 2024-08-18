@@ -17,7 +17,7 @@ def get_current_version():
     path = get_project_root() / "pyproject.toml"
     with open(path, "rb") as f:
         pyproject = tomllib.load(f)
-        return pyproject["tool"]["poetry"]["version"]
+        return pyproject["project"]["version"]
 
 
 def get_db_uri(

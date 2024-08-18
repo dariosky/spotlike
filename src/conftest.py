@@ -4,11 +4,10 @@ import pytest
 from sqlmodel import Session, SQLModel
 from starlette.testclient import TestClient
 
-from db.main import get_session, get_db_engine
-from app import make_app
-
 
 def get_test_db_engine(**kwargs):
+    from db.main import get_db_engine
+
     engine = get_db_engine(db_uri="sqlite://")  # in-memory
     SQLModel.metadata.create_all(engine)
     return engine
@@ -29,21 +28,6 @@ def mocked_db_connection(mocker):
     return mocker.patch("db.main.get_db_engine", side_effect=get_test_db_engine)
 
 
-@pytest.fixture(autouse=True)
-def referenced_network_names(mocker):
-    return mocker.patch(
-        "reference_data.get_network_names",
-        return_value={"BTC": "Bitcoin", "ETH": "Ethereum"},
-    )
-
-
-@pytest.fixture(autouse=True)
-def mock_slack(mocker):
-    return mocker.patch(
-        "rbl.utils.slack_utils.post_message",
-    )
-
-
 @pytest.fixture(name="db_session", scope="session")
 def session_fixture():
     engine = get_test_db_engine()
@@ -53,6 +37,9 @@ def session_fixture():
 
 @pytest.fixture(name="client", scope="session")
 async def test_app_fixture(db_session):
+    from db.main import get_session
+    from app import make_app
+
     def get_session_override():
         return db_session
 
